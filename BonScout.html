@@ -330,17 +330,19 @@ async function onUpload(file){
     await worker.terminate();
 
     // 3. Parse result
-    const items = parseReceiptText(text);
+    const result = parseReceiptText(text);
     const store = inferStoreFromText(text) || inferStoreFromName(file.name);
 
     // 4. Update UI
     ph.style.display = 'block';
-    if(items.length === 0) {
+    if(result.items.length === 0) {
       ph.innerHTML = `<div style="color:var(--danger);padding:10px">Keine Artikel erkannt. Bitte ein deutlicheres Bild hochladen.</div>`;
     } else {
+      const sumHtml = result.total ? `<div style="font-weight:900;margin-top:12px;color:var(--hot)">GESAMTSUMME: ${result.total}€</div>` : '';
       ph.innerHTML = `<div style="text-align:left;padding:10px">
         <div style="font-weight:900;margin-bottom:8px;color:var(--accent2)">KI-ERKANNTE ARTIKEL (${store}):</div>
-        ${items.map(it => `<div class="meta" style="color:var(--text)">● ${it.name} (${it.unit}) — <span style="color:var(--accent)">${it.price}€</span></div>`).join('')}
+        ${result.items.map(it => `<div class="meta" style="color:var(--text)">● ${it.name} (${it.unit}) — <span style="color:var(--accent)">${it.price}€</span></div>`).join('')}
+        ${sumHtml}
       </div>`;
     }
 
@@ -349,7 +351,8 @@ async function onUpload(file){
       uploadedAt: todayISO(),
       sourceName: file.name,
       store: store,
-      items: items.length > 0 ? items : buildSyntheticItems(file.name.length) // Fallback if OCR fails completely for demo
+      total: result.total,
+      items: result.items.length > 0 ? result.items : buildSyntheticItems(file.name.length) // Fallback if OCR fails completely for demo
     };
 
     receipts.push(receipt);
@@ -368,6 +371,7 @@ async function onUpload(file){
 function parseReceiptText(text) {
   const lines = text.split('\n');
   const foundItems = [];
+  let total = null;
 
   // Basic Regex for Price (e.g. 1,99 or 0.99) - but NOT part of a date like 20.03.2024
   const priceRegex = /(?<!\d\d\.)(\d+[,.]\d{2})(?!\.\d{4})/;
@@ -378,6 +382,13 @@ function parseReceiptText(text) {
     line = line.trim();
     if (line.length < 3) continue;
 
+    // Hard stop when SUMME or GESAMT is reached
+    if (started && ['SUMME', 'GESAMT', 'TOTAL'].some(m => line.toUpperCase().includes(m))) {
+      const totalMatch = line.match(priceRegex);
+      if (totalMatch) total = totalMatch[1].replace('.', ',');
+      break;
+    }
+
     // Start only after EUR, € or Artikel markers
     if (!started) {
       if (['EUR', '€', 'ARTIKEL', 'NETTO'].some(m => line.toUpperCase().includes(m))) {
@@ -386,8 +397,8 @@ function parseReceiptText(text) {
       continue;
     }
 
-    // Ignore common receipt noise and end markers
-    const noise = ['summe', 'gesamt', 'steuer', 'mwst', 'datum', 'uhrzeit', 'bar', 'karte', 'wechselgeld', 'vielen dank', 'auf wiedersehen', 'bon-nr', 'beleg-nr'];
+    // Ignore other noise
+    const noise = ['steuer', 'mwst', 'datum', 'uhrzeit', 'bar', 'karte', 'wechselgeld', 'vielen dank', 'auf wiedersehen', 'bon-nr', 'beleg-nr'];
     if (noise.some(n => line.toLowerCase().includes(n))) continue;
 
     const match = line.match(priceRegex);
@@ -408,7 +419,7 @@ function parseReceiptText(text) {
       }
     }
   }
-  return foundItems.slice(0, 15); // Limit to top 15 items to avoid noise
+  return { items: foundItems.slice(0, 15), total };
 }
 
 function inferStoreFromText(text) {
