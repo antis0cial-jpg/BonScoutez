@@ -376,8 +376,8 @@ function parseReceiptText(text) {
   // Basic Regex for Price (e.g. 1,99 or 0.99) - but NOT part of a date like 20.03.2024
   const priceRegex = /(?<!\d\d\.)(?<!\d\d\.\d\d\.)(\d+[,.]\d{2})(?!\.\d{2})(?!\.\d{4})/;
 
-  // Skip the first 6 lines as requested
-  const startIndex = 6;
+  // Skip the first 7 lines as requested
+  const startIndex = 7;
 
   // Only process lines starting from the 7th line
   for (let i = startIndex; i < lines.length; i++) {
