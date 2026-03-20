@@ -118,9 +118,6 @@
     <div class="logo-icon">✨</div>
     <div class="logo-text">Bon<span>Scout</span></div>
   </div>
-  <div class="header-pills">
-    <div class="hpill freq">Daily</div>
-  </div>
 </header>
 
 <div class="app">
@@ -192,8 +189,8 @@
 <script>
 const STORAGE_KEY = 'bonscout.receipts.v1';
 
-const DAILY_KEYWORDS = ['milch','brot','wasser','banane','apfel','obst','gemüse','tomate','gurke','eier','joghurt','käse','fleisch','nudel','reis','butter','saft','riegel','schokolade'];
-const LONG_KEYWORDS  = ['öl','gewürz','salz','reiniger','tabs','essig','zucker','mehl','konserve','backpulver','pfeffer','haushalt','wc','spray'];
+const DAILY_KEYWORDS = ['milch','brot','wasser','banane','apfel','obst','gemüse','tomate','gurke','eier','joghurt','käse','fleisch','butter','saft','riegel','schokolade'];
+const LONG_KEYWORDS  = ['öl','gewürz','salz','reiniger','tabs','essig','zucker','mehl','konserve','backpulver','pfeffer','haushalt','wc','spray','nudel','reis'];
 
 const BASE_CATALOG = [
   {name:'Vollmilch 3,5%', basePrice:1.79, unit:'1L'},
@@ -551,18 +548,9 @@ function renderAll(){
 }
 
 function renderKpis(items){
-  const dueSoon = items.filter(i=>i.status==='due' || i.dueIn <= 2).length;
-  const dailyCount = items.filter(i=>i.cadence==='daily').length;
-  const longCount = items.filter(i=>i.cadence==='long').length;
-  const stores = new Set(receipts.map(r=>r.store)).size;
-
   document.getElementById('kpis').innerHTML = `
     <div class="kpi"><div class="k">Hochgeladene Bons</div><div class="v">${receipts.length}</div></div>
     <div class="kpi"><div class="k">Erkannte Artikel</div><div class="v">${items.length}</div></div>
-    <div class="kpi"><div class="k">Bald fällig</div><div class="v">${dueSoon}</div></div>
-    <div class="kpi"><div class="k">Genutzte Stores</div><div class="v">${stores}</div></div>
-    <div class="kpi"><div class="k">Daily Artikel</div><div class="v">${dailyCount}</div></div>
-    <div class="kpi"><div class="k">Long-lasting</div><div class="v">${longCount}</div></div>
   `;
 }
 
@@ -571,15 +559,13 @@ function renderBehavior(items){
     document.getElementById('behaviorSummary').textContent = 'Noch keine Daten vorhanden.';
     return;
   }
-  const top = [...items].sort((a,b)=>b.count-a.count).slice(0,3).map(i=>i.name).join(', ') || '—';
-  const due = items.filter(i=>i.status==='due' || i.dueIn<=2).map(i=>i.name).slice(0,4).join(', ') || 'keine';
-  const long = items.filter(i=>i.cadence==='long').slice(0,3).map(i=>i.name).join(', ') || 'keine';
+  const daily = items.filter(i=>classifyName(i.name)==='daily').slice(0,5).map(i=>i.name).join(', ') || 'keine';
+  const long = items.filter(i=>classifyName(i.name)==='long').slice(0,5).map(i=>i.name).join(', ') || 'keine';
 
   document.getElementById('behaviorSummary').innerHTML = `
-    Top häufig gekauft: <strong>${top}</strong><br><br>
-    Bald wieder nötig: <strong>${due}</strong><br><br>
-    Langlebige Vorräte: <strong>${long}</strong><br><br>
-    Rhythmus: Basierend auf ${receipts.length} Bon(s) und zeitlichen Kaufintervallen.
+    Täglicher Bedarf / Kurzes MHD: <strong>${daily}</strong><br><br>
+    Langlebige Vorräte (Nudeln, Reiniger etc.): <strong>${long}</strong><br><br>
+    Basierend auf ${receipts.length} analysierten Bons.
   `;
 }
 
