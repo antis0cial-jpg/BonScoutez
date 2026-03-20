@@ -109,6 +109,61 @@
     .scan-status{font-size:0.75rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent2)}
     .scan-log{font-size:0.65rem;color:var(--muted);margin-top:8px;height:1.2em}
 
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface2);
+      margin-bottom: 8px;
+      cursor: default;
+      position: relative;
+      font-size: 0.85rem;
+    }
+    .history-item:hover {
+      border-color: var(--accent2);
+    }
+    .history-tooltip {
+      position: absolute;
+      visibility: hidden;
+      opacity: 0;
+      background: var(--surface);
+      border: 1px solid var(--accent2);
+      padding: 12px;
+      border-radius: 12px;
+      z-index: 110;
+      width: 260px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+      transition: 0.2s;
+      pointer-events: none;
+      right: 0;
+      top: calc(100% + 5px);
+      transform: translateY(10px);
+    }
+    .history-item:hover .history-tooltip {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .history-tooltip h4 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+    }
+    .history-tooltip .ht-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      margin-bottom: 4px;
+    }
+
+    .hidden { display: none !important; }
+
     @media (max-width:980px){.app{grid-template-columns:1fr}.left{border-right:none;border-bottom:1px solid var(--border)}}
   </style>
 </head>
@@ -149,8 +204,16 @@
 
   <section class="right">
     <div class="card">
-      <div class="section-label">Profil-Kennzahlen</div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+        <div class="section-label" style="margin-bottom:0">Profil-Kennzahlen</div>
+        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.65rem;" onclick="window.toggleHistory()">BON-HISTORIE</button>
+      </div>
       <div id="kpis" class="kpi-grid"></div>
+    </div>
+
+    <div id="historySection" class="card hidden">
+      <div class="section-label">Vergangene Bons</div>
+      <div id="historyList"></div>
     </div>
 
     <div class="card">
@@ -545,12 +608,77 @@ function renderAll(){
   renderKpis(items);
   renderBehavior(items);
   renderItemList(items);
+  renderHistory();
+}
+
+window.toggleHistory = function() {
+  const s = document.getElementById('historySection');
+  s.classList.toggle('hidden');
+}
+
+function renderHistory() {
+  const root = document.getElementById('historyList');
+  if (!receipts.length) {
+    root.innerHTML = '<div class="muted">Keine Bons in der Historie.</div>';
+    return;
+  }
+
+  const sorted = [...receipts].sort((a,b) => b.uploadedAt.localeCompare(a.uploadedAt));
+
+  root.innerHTML = sorted.map(r => {
+    // Calculate total if not present
+    let total = r.total;
+    if (!total) {
+      let tVal = 0;
+      r.items.forEach(it => tVal += parseFloat(it.price.replace(',', '.')));
+      total = tVal.toFixed(2).replace('.', ',');
+    }
+
+    const itemsHtml = r.items.map(it => `
+      <div class="ht-line">
+        <span>${escapeHtml(it.name)}</span>
+        <span style="color:var(--muted)">${it.price}€</span>
+      </div>
+    `).join('');
+
+    return `
+      <div class="history-item">
+        <div style="flex:1">
+          <div style="font-weight:900">${r.store || 'Unbekannt'}</div>
+          <div class="meta">${formatDate(r.uploadedAt)}</div>
+        </div>
+        <div style="font-weight:900; color:var(--accent2)">${total}€</div>
+        <div class="history-tooltip">
+          <h4>Artikel-Details</h4>
+          ${itemsHtml}
+          <div class="ht-line" style="margin-top:8px; border-top: 1px solid var(--border); padding-top:4px; font-weight:900">
+            <span>GESAMT</span>
+            <span>${total}€</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function renderKpis(items){
+  let totalSpend = 0;
+  receipts.forEach(r => {
+    let tVal = 0;
+    if (r.total) {
+      tVal = parseFloat(r.total.replace(',', '.'));
+    } else {
+      r.items.forEach(it => {
+        tVal += parseFloat(it.price.replace(',', '.'));
+      });
+    }
+    totalSpend += tVal;
+  });
+
   document.getElementById('kpis').innerHTML = `
     <div class="kpi"><div class="k">Hochgeladene Bons</div><div class="v">${receipts.length}</div></div>
     <div class="kpi"><div class="k">Erkannte Artikel</div><div class="v">${items.length}</div></div>
+    <div class="kpi"><div class="k" style="color:var(--accent)">Gesamtausgaben</div><div class="v">${totalSpend.toFixed(2).replace('.', ',')}€</div></div>
   `;
 }
 
