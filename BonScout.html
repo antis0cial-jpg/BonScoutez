@@ -374,7 +374,9 @@ function parseReceiptText(text) {
   let total = null;
 
   // Basic Regex for Price (e.g. 1,99 or 0.99) - but NOT part of a date like 20.03.2024
-  const priceRegex = /(?<!\d\d\.)(\d+[,.]\d{2})(?!\.\d{4})/;
+  const priceRegex = /(?<!\d\d\.)(?<!\d\d\.\d\d\.)(\d+[,.]\d{2})(?!\.\d{2})(?!\.\d{4})/;
+  // Date pattern: e.g. 20.05.24, 20.05.2024, 20/05/24
+  const dateRegex = /\d{2}[./]\d{2}[./]\d{2,4}/;
 
   let started = false;
 
@@ -391,11 +393,15 @@ function parseReceiptText(text) {
 
     // Start only after EUR, € or Artikel markers
     if (!started) {
-      if (['EUR', '€', 'ARTIKEL', 'NETTO'].some(m => line.toUpperCase().includes(m))) {
+      // Remove NETTO as trigger - too frequent in headers
+      if (['EUR', '€', 'ARTIKEL'].some(m => line.toUpperCase().includes(m))) {
         started = true;
       }
       continue;
     }
+
+    // Skip lines that look like a date entirely
+    if (dateRegex.test(line)) continue;
 
     // Ignore other noise
     const noise = ['steuer', 'mwst', 'datum', 'uhrzeit', 'bar', 'karte', 'wechselgeld', 'vielen dank', 'auf wiedersehen', 'bon-nr', 'beleg-nr'];
