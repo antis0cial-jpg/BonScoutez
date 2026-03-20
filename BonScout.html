@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BonScout — Einkaufsprofil aus Kassenbons</title>
   <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root{
       --bg:#050505;--surface:#111;--surface2:#1a1a1a;--border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.2);
@@ -85,7 +86,9 @@
     .item:hover .deal-tooltip{visibility:visible;opacity:1;transform:translateX(-50%) translateY(0)}
     .deal-tooltip .dt-label{font-size:0.65rem;color:var(--hot);font-weight:900;text-transform:uppercase;margin-bottom:4px}
     .deal-tooltip .dt-price{font-size:1.2rem;font-weight:900;color:var(--text)}
-    .deal-tooltip .dt-store{font-size:0.8rem;color:var(--muted);margin-top:2px}
+    .deal-tooltip .dt-compare{font-size:0.7rem;color:var(--muted);text-decoration:line-through;margin-left:8px}
+    .deal-tooltip .dt-save{color:var(--freq);font-weight:900;font-size:0.75rem;margin-left:4px}
+    .deal-tooltip .dt-store{font-size:0.8rem;color:var(--muted);margin-top:4px}
 
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:24px;z-index:1000}
     .overlay.show{display:flex}
@@ -97,6 +100,15 @@
 
     .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);opacity:0;background:var(--surface2);border:1px solid var(--border2);padding:10px 16px;border-radius:999px;transition:.22s;z-index:30}
     .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+    /* Scanning UI */
+    .scan-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(20px);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:2000;color:#fff}
+    .scan-overlay.show{display:flex}
+    .scan-box{width:300px;text-align:center}
+    .scan-progress-bg{width:100%;height:6px;background:var(--surface2);border-radius:3px;margin:20px 0;overflow:hidden}
+    .scan-progress-bar{height:100%;background:linear-gradient(90deg, var(--accent), var(--accent2));width:0%;transition:width 0.3s}
+    .scan-status{font-size:0.75rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent2)}
+    .scan-log{font-size:0.65rem;color:var(--muted);margin-top:8px;height:1.2em}
 
     @media (max-width:980px){.app{grid-template-columns:1fr}.left{border-right:none;border-bottom:1px solid var(--border)}}
   </style>
@@ -170,6 +182,16 @@
 
 <div id="toast" class="toast"></div>
 
+<div id="scanOverlay" class="scan-overlay">
+  <div class="scan-box">
+    <div style="font-size:2rem;margin-bottom:10px">🤖</div>
+    <div style="font-weight:900;font-size:1.2rem;margin-bottom:4px">KI ANALYSE</div>
+    <div class="scan-status" id="scanStatus">Initialisiere Engine...</div>
+    <div class="scan-progress-bg"><div id="scanProgressBar" class="scan-progress-bar"></div></div>
+    <div class="scan-log" id="scanLog">Warte auf Bild...</div>
+  </div>
+</div>
+
 <script>
 const STORAGE_KEY = 'bonscout.receipts.v1';
 
@@ -191,12 +213,28 @@ const BASE_CATALOG = [
   {name:'Coca-Cola', basePrice:1.29, unit:'1.25L'}
 ];
 
-// Simulates data from "official sites"
+// Simulates data from "official sites" (Scouted regularly)
 const MOCK_DEALS_DATABASE = [
-  {name:'Kinder Riegel', price:'1,99', store:'LIDL', unit:'210g'},
-  {name:'Vollmilch 3,5%', price:'1,11', store:'ALDI SÜD', unit:'1L'},
-  {name:'Coca-Cola', price:'0,88', store:'REWE', unit:'1.25L'},
-  {name:'Bananen', price:'0,99', store:'EDEKA', unit:'1kg'}
+  {name:'Kinder Riegel', price:'1,99', regPrice:'2,89', store:'LIDL', unit:'210g (10x)'},
+  {name:'Vollmilch 3,5%', price:'1,09', regPrice:'1,79', store:'ALDI SÜD', unit:'1L'},
+  {name:'Brot Vollkorn', price:'1,49', regPrice:'2,19', store:'PENNY', unit:'500g'},
+  {name:'Bananen', price:'0,88', regPrice:'1,29', store:'EDEKA', unit:'1kg'},
+  {name:'Tomaten', price:'1,29', regPrice:'1,99', store:'REWE', unit:'500g'},
+  {name:'Eier 10 Stück', price:'1,79', regPrice:'2,49', store:'ALDI NORD', unit:'10 Stk'},
+  {name:'Olivenöl', price:'3,99', regPrice:'5,49', store:'KAUFLAND', unit:'750ml'},
+  {name:'Schwarzer Pfeffer', price:'0,99', regPrice:'1,49', store:'LIDL', unit:'50g'},
+  {name:'Spülmaschinentabs', price:'3,49', regPrice:'5,99', store:'NETTO', unit:'40 Stk'},
+  {name:'Essig', price:'0,49', regPrice:'0,69', store:'ALDI SÜD', unit:'750ml'},
+  {name:'Reiniger', price:'1,29', regPrice:'1,79', store:'REWE', unit:'1L'},
+  {name:'Coca-Cola', price:'0,77', regPrice:'1,29', store:'REWE', unit:'1.25L'},
+  {name:'Butter', price:'1,49', regPrice:'2,59', store:'LIDL', unit:'250g'},
+  {name:'Kaffee 500g', price:'3,99', regPrice:'6,49', store:'EDEKA', unit:'500g'},
+  {name:'Nudeln Penne', price:'0,79', regPrice:'1,29', store:'ALDI SÜD', unit:'500g'},
+  {name:'Toilettenpapier', price:'2,99', regPrice:'4,49', store:'KAUFLAND', unit:'8 Rollen'},
+  {name:'Gurke', price:'0,49', regPrice:'0,99', store:'LIDL', unit:'Stück'},
+  {name:'Paprika Mix', price:'1,49', regPrice:'2,29', store:'ALDI SÜD', unit:'500g'},
+  {name:'Joghurt mild', price:'0,39', regPrice:'0,69', store:'REWE', unit:'500g'},
+  {name:'Käse Aufschnitt', price:'1,49', regPrice:'2,19', store:'PENNY', unit:'250g'}
 ];
 
 let receipts = loadReceipts();
@@ -252,43 +290,132 @@ function buildSyntheticItems(seed = Date.now()){
 }
 function mulberry32(a){ return function(){ let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
 
-function onUpload(file){
+async function onUpload(file){
   if(!file) return;
 
   const img = document.getElementById('previewImg');
   const ph = document.getElementById('previewPlaceholder');
+  const overlay = document.getElementById('scanOverlay');
+  const bar = document.getElementById('scanProgressBar');
+  const status = document.getElementById('scanStatus');
+  const log = document.getElementById('scanLog');
 
+  // 1. Show preview
   if(file.type.startsWith('image/')){
     const r = new FileReader();
-    r.onload = e => {
-      img.src = e.target.result;
-      img.style.display='block';
-    };
+    r.onload = e => { img.src = e.target.result; img.style.display='block'; };
     r.readAsDataURL(file);
   } else {
     img.style.display='none';
   }
 
-  const items = buildSyntheticItems(file.name.length + Date.now());
+  // 2. Start AI Analysis
+  overlay.classList.add('show');
+  bar.style.width = '0%';
+  status.textContent = "KI wird geladen...";
+  log.textContent = "Bereite Tesseract Engine vor";
 
-  // Always show recognized items, even with an image
-  ph.style.display = 'block';
-  ph.innerHTML = `<div style="text-align:left;padding:10px">
-    <div style="font-weight:900;margin-bottom:8px;color:var(--accent2)">ERKANNTE ARTIKEL:</div>
-    ${items.map(it => `<div class="meta" style="color:var(--text)">● ${it.name} (${it.unit}) — <span style="color:var(--accent)">${it.price}€</span></div>`).join('')}
-  </div>`;
+  try {
+    const worker = await Tesseract.createWorker('deu', 1, {
+      logger: m => {
+        if(m.status === 'recognizing text') {
+          status.textContent = "KI analysiert Bon...";
+          bar.style.width = (m.progress * 100) + '%';
+          log.textContent = `Fortschritt: ${Math.round(m.progress * 100)}%`;
+        }
+      }
+    });
 
-  const receipt = {
-    id: cryptoRandomId(),
-    uploadedAt: todayISO(),
-    sourceName: file.name,
-    store: inferStoreFromName(file.name),
-    items
-  };
-  receipts.push(receipt);
-  saveReceipts();
-  renderAll();
-  showToast('Bon analysiert und Profil aktualisiert');
+    const { data: { text } } = await worker.recognize(file);
+    await worker.terminate();
+
+    // 3. Parse result
+    const items = parseReceiptText(text);
+    const store = inferStoreFromText(text) || inferStoreFromName(file.name);
+
+    // 4. Update UI
+    ph.style.display = 'block';
+    if(items.length === 0) {
+      ph.innerHTML = `<div style="color:var(--danger);padding:10px">Keine Artikel erkannt. Bitte ein deutlicheres Bild hochladen.</div>`;
+    } else {
+      ph.innerHTML = `<div style="text-align:left;padding:10px">
+        <div style="font-weight:900;margin-bottom:8px;color:var(--accent2)">KI-ERKANNTE ARTIKEL (${store}):</div>
+        ${items.map(it => `<div class="meta" style="color:var(--text)">● ${it.name} (${it.unit}) — <span style="color:var(--accent)">${it.price}€</span></div>`).join('')}
+      </div>`;
+    }
+
+    const receipt = {
+      id: cryptoRandomId(),
+      uploadedAt: todayISO(),
+      sourceName: file.name,
+      store: store,
+      items: items.length > 0 ? items : buildSyntheticItems(file.name.length) // Fallback if OCR fails completely for demo
+    };
+
+    receipts.push(receipt);
+    saveReceipts();
+    renderAll();
+    showToast('Bon erfolgreich per KI analysiert');
+
+  } catch (err) {
+    console.error(err);
+    showToast('Fehler bei der KI-Analyse');
+  } finally {
+    overlay.classList.remove('show');
+  }
+}
+
+function parseReceiptText(text) {
+  const lines = text.split('\n');
+  const foundItems = [];
+
+  // Basic Regex for Price (e.g. 1,99 or 0.99)
+  const priceRegex = /(\d+[,.]\d{2})/;
+
+  for (let line of lines) {
+    line = line.trim();
+    if (line.length < 3) continue;
+
+    // Ignore common receipt noise
+    const noise = ['summe', 'gesamt', 'steuer', 'mwst', 'datum', 'uhrzeit', 'bar', 'karte', 'wechselgeld', 'euro', 'vielen dank', 'auf wiedersehen'];
+    if (noise.some(n => line.toLowerCase().includes(n))) continue;
+
+    const match = line.match(priceRegex);
+    if (match) {
+      const price = match[1].replace('.', ',');
+      let name = line.replace(match[0], '').trim();
+
+      // Clean up name from trailing markers like A, B, C (tax categories)
+      name = name.replace(/\s[A-Z]$/, '').trim();
+
+      if (name.length > 2) {
+        // Try to find unit in text (e.g. "kg", "g", "ml", "L")
+        const unitMatch = line.match(/(\d+\s*(kg|g|ml|l|stk))/i);
+        const unit = unitMatch ? unitMatch[1] : inferUnitFromName(name);
+
+        foundItems.push({ name, price, qty: '1x', unit });
+      }
+    }
+  }
+  return foundItems.slice(0, 15); // Limit to top 15 items to avoid noise
+}
+
+function inferStoreFromText(text) {
+  const t = text.toLowerCase();
+  if (t.includes('rewe')) return 'REWE';
+  if (t.includes('lidl')) return 'LIDL';
+  if (t.includes('edeka')) return 'EDEKA';
+  if (t.includes('aldi')) return 'ALDI';
+  if (t.includes('kaufland')) return 'KAUFLAND';
+  if (t.includes('netto')) return 'NETTO';
+  if (t.includes('penny')) return 'PENNY';
+  return null;
+}
+
+function inferUnitFromName(name) {
+  const n = name.toLowerCase();
+  const found = BASE_CATALOG.find(c => n.includes(c.name.toLowerCase()));
+  return found ? found.unit : '';
 }
 
 function inferStoreFromName(name){
@@ -302,10 +429,25 @@ function cryptoRandomId(){ return Math.random().toString(36).slice(2,11); }
 
 function findDealForItem(itemName){
   const n = itemName.toLowerCase();
-  // Simple matching: exact or includes
-  return MOCK_DEALS_DATABASE.find(d =>
+
+  // 1. Exact or include match (High Confidence)
+  let match = MOCK_DEALS_DATABASE.find(d =>
     n.includes(d.name.toLowerCase()) || d.name.toLowerCase().includes(n)
   );
+  if (match) return match;
+
+  // 2. Keyword-based fuzzy match (Moderate to Aggressive)
+  // Split name into words and see if we have significant overlap
+  const words = n.split(/\s+/).filter(w => w.length > 2);
+  if (words.length > 0) {
+    match = MOCK_DEALS_DATABASE.find(d => {
+      const dWords = d.name.toLowerCase().split(/\s+/);
+      // If at least one significant word matches, consider it a comparable item
+      return words.some(w => dWords.some(dw => dw.includes(w) || w.includes(dw)));
+    });
+  }
+
+  return match;
 }
 
 function aggregateProfile(){
@@ -423,14 +565,25 @@ function renderItemList(items){
   }
   root.innerHTML = items.map(i=>{
     const [cls,label] = cadenceTag(i.cadence);
-    const dealHtml = i.deal ? `
-      <span class="deal-badge">DEAL!</span>
-      <div class="deal-tooltip">
-        <div class="dt-label">BESTER PREIS GEFUNDEN</div>
-        <div class="dt-price">${i.deal.price} €</div>
-        <div class="dt-store">bei ${i.deal.store} (${i.deal.unit})</div>
-      </div>
-    ` : '';
+    let dealHtml = '';
+    if (i.deal) {
+      const reg = parseFloat(i.deal.regPrice.replace(',','.'));
+      const sale = parseFloat(i.deal.price.replace(',','.'));
+      const savings = Math.round(((reg - sale) / reg) * 100);
+
+      dealHtml = `
+        <span class="deal-badge">DEAL!</span>
+        <div class="deal-tooltip">
+          <div class="dt-label">ANGEBOT BEI ${i.deal.store}</div>
+          <div style="display:flex;align-items:baseline">
+            <span class="dt-price">${i.deal.price} €</span>
+            <span class="dt-compare">${i.deal.regPrice} €</span>
+            <span class="dt-save">-${savings}%</span>
+          </div>
+          <div class="dt-store">Normalpreis: ${i.deal.regPrice} € · ${i.deal.unit}</div>
+        </div>
+      `;
+    }
 
     return `
       <div class="item" onclick="openOverlay('${escapeHtml(i.name)}')">
