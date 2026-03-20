@@ -376,21 +376,11 @@ function parseReceiptText(text) {
   // Basic Regex for Price (e.g. 1,99 or 0.99) - but NOT part of a date like 20.03.2024
   const priceRegex = /(?<!\d\d\.)(?<!\d\d\.\d\d\.)(\d+[,.]\d{2})(?!\.\d{2})(?!\.\d{4})/;
 
-  // Find the index of the line that starts the item list
-  let startIndex = -1;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim().toUpperCase();
-    if (line.includes('EUR') || line.includes('€') || line.includes('ARTIKEL')) {
-      startIndex = i;
-      break;
-    }
-  }
+  // Skip the first 6 lines as requested
+  const startIndex = 6;
 
-  // If we didn't find a start marker, we can't reliably parse
-  if (startIndex === -1) return { items: [], total: null };
-
-  // Only process lines AFTER the start marker line
-  for (let i = startIndex + 1; i < lines.length; i++) {
+  // Only process lines starting from the 7th line
+  for (let i = startIndex; i < lines.length; i++) {
     let line = lines[i].trim();
     if (line.length < 3) continue;
 
