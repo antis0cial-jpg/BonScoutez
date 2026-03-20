@@ -85,10 +85,9 @@
     }
     .item:hover .deal-tooltip{visibility:visible;opacity:1;transform:translateX(-50%) translateY(0)}
     .deal-tooltip .dt-label{font-size:0.65rem;color:var(--hot);font-weight:900;text-transform:uppercase;margin-bottom:4px}
-    .deal-tooltip .dt-price{font-size:1.2rem;font-weight:900;color:var(--text)}
-    .deal-tooltip .dt-compare{font-size:0.7rem;color:var(--muted);text-decoration:line-through;margin-left:8px}
-    .deal-tooltip .dt-save{color:var(--freq);font-weight:900;font-size:0.75rem;margin-left:4px}
-    .deal-tooltip .dt-store{font-size:0.8rem;color:var(--muted);margin-top:4px}
+    .deal-tooltip .dt-price{font-size:1.4rem;font-weight:900;color:var(--accent2)}
+    .deal-tooltip .dt-name{font-size:0.8rem;font-weight:900;color:var(--text);margin-top:4px}
+    .deal-tooltip .dt-store{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px}
 
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:24px;z-index:1000}
     .overlay.show{display:flex}
@@ -121,8 +120,6 @@
   </div>
   <div class="header-pills">
     <div class="hpill freq">Daily</div>
-    <div class="hpill rare">Long-lasting</div>
-    <div class="hpill">Profil</div>
   </div>
 </header>
 
@@ -216,6 +213,11 @@ const BASE_CATALOG = [
 // Simulates data from "official sites" (Scouted regularly)
 const MOCK_DEALS_DATABASE = [
   {name:'Kinder Riegel', price:'1,99', regPrice:'2,89', store:'LIDL', unit:'210g (10x)'},
+  {name:'Kinder Bueno', price:'1,69', regPrice:'2,49', store:'REWE', unit:'6er Pack'},
+  {name:'Kinder Schokolade', price:'0,99', regPrice:'1,49', store:'EDEKA', unit:'100g'},
+  {name:'Kinder Cards', price:'1,49', regPrice:'2,19', store:'ALDI SÜD', unit:'128g'},
+  {name:'Kaliskay Wodka', price:'4,44', regPrice:'4,99', store:'REWE', unit:'0,7L'},
+  {name:'Krusovice Hell', price:'1,11', regPrice:'1,38', store:'EDEKA', unit:'0,5L'},
   {name:'Vollmilch 3,5%', price:'1,09', regPrice:'1,79', store:'ALDI SÜD', unit:'1L'},
   {name:'Brot Vollkorn', price:'1,49', regPrice:'2,19', store:'PENNY', unit:'500g'},
   {name:'Bananen', price:'0,88', regPrice:'1,29', store:'EDEKA', unit:'1kg'},
@@ -234,7 +236,11 @@ const MOCK_DEALS_DATABASE = [
   {name:'Gurke', price:'0,49', regPrice:'0,99', store:'LIDL', unit:'Stück'},
   {name:'Paprika Mix', price:'1,49', regPrice:'2,29', store:'ALDI SÜD', unit:'500g'},
   {name:'Joghurt mild', price:'0,39', regPrice:'0,69', store:'REWE', unit:'500g'},
-  {name:'Käse Aufschnitt', price:'1,49', regPrice:'2,19', store:'PENNY', unit:'250g'}
+  {name:'Käse Aufschnitt', price:'1,49', regPrice:'2,19', store:'PENNY', unit:'250g'},
+  {name:'Mondo Italiano Penne', price:'0,77', regPrice:'0,99', store:'NETTO', unit:'500g'},
+  {name:'Bratwurst', price:'2,49', regPrice:'3,49', store:'REWE', unit:'500g'},
+  {name:'Feta', price:'1,49', regPrice:'1,99', store:'LIDL', unit:'200g'},
+  {name:'Radieschen', price:'0,39', regPrice:'0,69', store:'ALDI NORD', unit:'Bund'}
 ];
 
 let receipts = loadReceipts();
@@ -369,47 +375,51 @@ async function onUpload(file){
 }
 
 function parseReceiptText(text) {
-  const lines = text.split('\n');
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
   const foundItems = [];
   let total = null;
+  let pendingQty = null;
 
-  // Basic Regex for Price (e.g. 1,99 or 0.99) - but NOT part of a date like 20.03.2024
   const priceRegex = /(?<!\d\d\.)(?<!\d\d\.\d\d\.)(\d+[,.]\d{2})(?!\.\d{2})(?!\.\d{4})/;
+  const qtyRegex = /(\d+)\s*[xX*]\s*(\d+[,.]\d{2,})/;
+  const dateRegex = /\d{2}\.\d{2}\.\d{2,4}/;
 
-  // Skip the first 7 lines as requested
-  const startIndex = 7;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const upperLine = line.toUpperCase();
 
-  // Only process lines starting from the 7th line
-  for (let i = startIndex; i < lines.length; i++) {
-    let line = lines[i].trim();
-    if (line.length < 3) continue;
-
-    // Hard stop when SUMME or GESAMT is reached
-    if (['SUMME', 'GESAMT', 'TOTAL'].some(m => line.toUpperCase().includes(m))) {
-      const totalMatch = line.match(priceRegex);
-      if (totalMatch) total = totalMatch[1].replace('.', ',');
-      break;
+    if (upperLine.includes('SUMME') || upperLine.includes('GESAMT') || upperLine.includes('TOTAL') || upperLine.includes('ZU ZAHLEN')) {
+       const m = line.match(priceRegex);
+       if (m) total = m[1].replace('.', ',');
+       if (foundItems.length > 0) break;
+       continue;
     }
 
-    // Ignore noise
-    const noise = ['steuer', 'mwst', 'datum', 'uhrzeit', 'bar', 'karte', 'wechselgeld', 'vielen dank', 'auf wiedersehen', 'bon-nr', 'beleg-nr'];
-    if (noise.some(n => line.toLowerCase().includes(n))) continue;
+    const noise = ['STEUER', 'MWST', 'DATUM', 'UHRZEIT', 'BELEG', 'TERMINAL', 'CARD', 'KARTE', 'BAR', 'GEGEBEN', 'RÜCKGELD', 'WECHSELGELD', 'VIELEN DANK', 'AUF WIEDERSEHEN', 'BETRAG', 'NETTO'];
+    if (noise.some(n => upperLine.includes(n)) || dateRegex.test(line) || upperLine.includes('PFAND')) {
+      pendingQty = null;
+      continue;
+    }
 
-    const match = line.match(priceRegex);
-    if (match) {
-      const priceValue = match[1];
-      const price = priceValue.replace('.', ',');
-      let name = line.replace(priceValue, '').trim();
+    const qm = line.match(qtyRegex);
+    if (qm) {
+      pendingQty = qm[1] + 'x';
+      continue;
+    }
 
-      // Clean up name from trailing markers like A, B, C (tax categories) and common currency symbols
-      name = name.replace(/\s[A-Z]$/, '').replace(/EUR|€/gi, '').trim();
+    const pm = line.match(priceRegex);
+    if (pm) {
+      const priceVal = pm[1];
+      const price = priceVal.replace('.', ',');
+      let name = line.replace(priceVal, '').trim();
+      // Remove trailing tax markers like '19', '7' or 'A', 'B'
+      name = name.replace(/\s[A-Z0-9]+$/, '').replace(/EUR|€/gi, '').trim();
 
       if (name.length > 2) {
-        // Try to find unit in text (e.g. "kg", "g", "ml", "L")
         const unitMatch = line.match(/(\d+\s*(kg|g|ml|l|stk))/i);
         const unit = unitMatch ? unitMatch[1] : inferUnitFromName(name);
-
-        foundItems.push({ name, price, qty: '1x', unit });
+        foundItems.push({ name, price, qty: pendingQty || '1x', unit });
+        pendingQty = null;
       }
     }
   }
@@ -447,18 +457,25 @@ function findDealForItem(itemName){
   const n = itemName.toLowerCase();
 
   // 1. Exact or include match (High Confidence)
-  let match = MOCK_DEALS_DATABASE.find(d =>
-    n.includes(d.name.toLowerCase()) || d.name.toLowerCase().includes(n)
-  );
+  let match = MOCK_DEALS_DATABASE.find(d => {
+    const dn = d.name.toLowerCase();
+    return n.includes(dn) || dn.includes(n);
+  });
   if (match) return match;
 
-  // 2. Keyword-based fuzzy match (Moderate to Aggressive)
-  // Split name into words and see if we have significant overlap
-  const words = n.split(/\s+/).filter(w => w.length > 2);
+  // 2. Brand-based matching (e.g. "Kinder")
+  const brands = ['kinder', 'milka', 'coca-cola', 'mondo', 'kaliskaya', 'krusovice', 'zeus', 'breadies'];
+  const foundBrand = brands.find(b => n.includes(b));
+  if (foundBrand) {
+    match = MOCK_DEALS_DATABASE.find(d => d.name.toLowerCase().includes(foundBrand));
+    if (match) return match;
+  }
+
+  // 3. Keyword-based fuzzy match
+  const words = n.split(/\s+/).filter(w => w.length > 3);
   if (words.length > 0) {
     match = MOCK_DEALS_DATABASE.find(d => {
       const dWords = d.name.toLowerCase().split(/\s+/);
-      // If at least one significant word matches, consider it a comparable item
       return words.some(w => dWords.some(dw => dw.includes(w) || w.includes(dw)));
     });
   }
@@ -583,20 +600,13 @@ function renderItemList(items){
     const [cls,label] = cadenceTag(i.cadence);
     let dealHtml = '';
     if (i.deal) {
-      const reg = parseFloat(i.deal.regPrice.replace(',','.'));
-      const sale = parseFloat(i.deal.price.replace(',','.'));
-      const savings = Math.round(((reg - sale) / reg) * 100);
-
       dealHtml = `
         <span class="deal-badge">DEAL!</span>
         <div class="deal-tooltip">
-          <div class="dt-label">ANGEBOT BEI ${i.deal.store}</div>
-          <div style="display:flex;align-items:baseline">
-            <span class="dt-price">${i.deal.price} €</span>
-            <span class="dt-compare">${i.deal.regPrice} €</span>
-            <span class="dt-save">-${savings}%</span>
-          </div>
-          <div class="dt-store">Normalpreis: ${i.deal.regPrice} € · ${i.deal.unit}</div>
+          <div class="dt-label">BESTER PREIS</div>
+          <div class="dt-price">${i.deal.price} €</div>
+          <div class="dt-name">${escapeHtml(i.deal.name)}</div>
+          <div class="dt-store">${i.deal.store}</div>
         </div>
       `;
     }
