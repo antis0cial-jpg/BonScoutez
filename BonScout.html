@@ -7,65 +7,89 @@
   <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg:#0f1117;--surface:#181c25;--surface2:#1f2433;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.13);
-      --text:#eceef4;--muted:#636b82;--freq:#34d97b;--freq-bg:rgba(52,217,123,.1);--rare:#f59e3a;--rare-bg:rgba(245,158,58,.1);
-      --accent:#5b8fff;--accent-bg:rgba(91,143,255,.12);--danger:#ff6969
+      --bg:#050505;--surface:#111;--surface2:#1a1a1a;--border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.2);
+      --text:#ffffff;--muted:#a0a0a0;--freq:#00ffaa;--freq-bg:rgba(0,255,170,.1);--rare:#ffbb00;--rare-bg:rgba(255,187,0,.1);
+      --accent:#ff00ff;--accent2:#00ffff;--accent-bg:rgba(255,0,255,.12);--danger:#ff3333;--hot:#ffff00
     }
     *,*:before,*:after{box-sizing:border-box;margin:0;padding:0}
-    body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;min-height:100vh;display:flex;flex-direction:column}
-    header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:rgba(15,17,23,.92)}
-    .logo{display:flex;align-items:center;gap:10px}
-    .logo-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),#8b5cf6)}
-    .logo-text{font-size:1.05rem;font-weight:800}.logo-text span{font-family:'Instrument Serif',serif;font-style:italic;color:var(--accent);font-weight:400}
-    .header-pills{display:flex;gap:8px}
-    .hpill{padding:4px 10px;border-radius:999px;font-size:.68rem;font-weight:700;border:1px solid var(--border);color:var(--muted)}
-    .hpill.freq{background:var(--freq-bg);color:var(--freq);border-color:rgba(52,217,123,.25)}
-    .hpill.rare{background:var(--rare-bg);color:var(--rare);border-color:rgba(245,158,58,.25)}
+    body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;min-height:100vh;display:flex;flex-direction:column;letter-spacing:-0.01em}
+    header{padding:20px 32px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:rgba(5,5,5,.95);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(45deg,var(--accent),var(--accent2));font-size:1.2rem;box-shadow:0 0 20px rgba(255,0,255,0.3)}
+    .logo-text{font-size:1.2rem;font-weight:900;text-transform:uppercase;letter-spacing:0.05em}.logo-text span{color:var(--accent2)}
+    .header-pills{display:flex;gap:12px}
+    .hpill{padding:6px 14px;border-radius:8px;font-size:.75rem;font-weight:800;border:1px solid var(--border);color:var(--muted);transition:0.2s}
+    .hpill:hover{border-color:var(--accent2);color:var(--text)}
+    .hpill.freq{background:var(--freq-bg);color:var(--freq);border-color:var(--freq)}
+    .hpill.rare{background:var(--rare-bg);color:var(--rare);border-color:var(--rare)}
 
-    .app{flex:1;display:grid;grid-template-columns:1.15fr .85fr;min-height:0}
-    .left{padding:20px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:14px;min-height:0}
-    .right{padding:20px;display:flex;flex-direction:column;gap:14px;overflow:auto}
+    .app{flex:1;display:grid;grid-template-columns:1fr 1.2fr;min-height:0;max-width:1400px;margin:0 auto;width:100%}
+    .left{padding:32px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:24px;min-height:0;overflow-y:auto}
+    .right{padding:32px;display:flex;flex-direction:column;gap:24px;overflow:auto;background:linear-gradient(180deg, transparent, rgba(255,0,255,0.02))}
 
-    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px}
-    .title{font-family:'Instrument Serif',serif;font-size:1.35rem;font-style:italic}
-    .title strong{font-family:'Cabinet Grotesk',sans-serif;font-style:normal;color:var(--accent);font-weight:900}
-    .sub{font-size:.82rem;color:var(--muted);margin-top:6px;line-height:1.45}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;transition:0.3s border-color}
+    .card:hover{border-color:var(--border2)}
+    .title{font-size:2rem;font-weight:900;line-height:1.1;margin-bottom:8px}
+    .title span{color:var(--accent)}
+    .sub{font-size:.9rem;color:var(--muted);line-height:1.6}
 
-    .drop{border:2px dashed var(--border2);background:var(--surface2);border-radius:14px;padding:16px;text-align:center;cursor:pointer}
-    .drop:hover{border-color:var(--accent)}
-    .btn{padding:9px 14px;border-radius:10px;border:none;font-weight:800;cursor:pointer;font-size:.82rem}
-    .btn-primary{background:var(--accent);color:#fff}
+    .drop{border:2px dashed var(--border);background:var(--surface2);border-radius:20px;padding:40px;text-align:center;cursor:pointer;transition:0.3s}
+    .drop:hover{border-color:var(--accent2);background:rgba(0,255,255,0.02)}
+    .btn{padding:12px 24px;border-radius:12px;border:none;font-weight:900;cursor:pointer;font-size:.85rem;text-transform:uppercase;letter-spacing:0.05em;transition:0.2s;display:inline-flex;align-items:center;gap:8px}
+    .btn-primary{background:var(--accent);color:#000;box-shadow:0 4px 15px rgba(255,0,255,0.3)}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,0,255,0.4)}
     .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
-    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .btn-secondary:hover{background:var(--border)}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
     #fileInput{display:none}
 
-    .preview{border:1px solid var(--border);border-radius:12px;background:var(--surface2);min-height:140px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .preview img{max-width:100%;max-height:220px;display:none}
-    .placeholder{font-size:.82rem;color:var(--muted);text-align:center;padding:16px}
+    .preview{border:1px solid var(--border);border-radius:20px;background:var(--surface2);min-height:160px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+    .preview img{max-width:100%;max-height:200px;display:none;filter:contrast(1.1) brightness(1.1);margin-bottom:12px;border-radius:10px}
+    .placeholder{font-size:.9rem;color:var(--muted);text-align:center;padding:24px;width:100%}
 
-    .section-label{font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-    .item{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);margin-bottom:8px;cursor:pointer}
-    .item:hover{border-color:var(--border2)}
-    .name{font-weight:800;font-size:.84rem}
-    .meta{font-size:.72rem;color:var(--muted);margin-top:2px}
-    .tag{padding:3px 8px;border-radius:999px;font-size:.62rem;font-weight:800}
-    .tag.freq{background:var(--freq-bg);color:var(--freq)}
-    .tag.rare{background:var(--rare-bg);color:var(--rare)}
-    .urgency{font-size:.68rem;margin-top:5px}
+    .section-label{font-size:.75rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:var(--accent2);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+    .item{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--surface2);margin-bottom:12px;cursor:pointer;transition:0.2s;position:relative}
+    .item:hover{border-color:var(--accent2);transform:scale(1.02);z-index:2}
+    .name{font-weight:900;font-size:1rem;display:flex;align-items:center;gap:8px}
+    .meta{font-size:.8rem;color:var(--muted);margin-top:4px}
+    .tag{padding:4px 10px;border-radius:6px;font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.05em}
+    .tag.freq{background:var(--freq-bg);color:var(--freq);border:1px solid var(--freq)}
+    .tag.rare{background:var(--rare-bg);color:var(--rare);border:1px solid var(--rare)}
+    .urgency{font-size:.75rem;font-weight:800;margin-top:8px;display:flex;align-items:center;gap:6px}
     .urgency.due{color:var(--danger)}
+    .urgency.due::before{content:'●';font-size:0.6rem}
     .urgency.ok{color:var(--muted)}
 
-    .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .kpi{padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
-    .kpi .k{font-size:.68rem;color:var(--muted)}
-    .kpi .v{font-size:1.1rem;font-weight:900;margin-top:2px}
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));gap:12px}
+    .kpi{padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--surface2);position:relative;overflow:hidden}
+    .kpi::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--accent2)}
+    .kpi .k{font-size:.7rem;color:var(--muted);text-transform:uppercase;font-weight:800;letter-spacing:0.05em}
+    .kpi .v{font-size:1.5rem;font-weight:900;margin-top:4px;color:var(--text)}
 
-    .offer-link{color:var(--accent);font-size:.8rem;word-break:break-all}
-    .muted{color:var(--muted);font-size:.8rem}
+    .muted{color:var(--muted);font-size:.9rem;line-height:1.6}
 
-    .overlay{position:fixed;inset:0;background:rgba(8,10,15,.65);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;z-index:20}
+    /* Hover Deal UI */
+    .deal-badge{background:var(--hot);color:#000;padding:2px 6px;border-radius:4px;font-size:0.65rem;font-weight:900;margin-left:8px;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%{opacity:1}50%{opacity:0.6}100%{opacity:1}}
+
+    .deal-tooltip{
+      position:absolute;visibility:hidden;opacity:0;
+      background:var(--surface);border:2px solid var(--hot);
+      padding:12px;border-radius:12px;z-index:100;width:200px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.5);transition:0.2s;
+      pointer-events:none;left:50%;bottom:calc(100% + 12px);
+      transform:translateX(-50%) translateY(10px);
+    }
+    .item:hover .deal-tooltip{visibility:visible;opacity:1;transform:translateX(-50%) translateY(0)}
+    .deal-tooltip .dt-label{font-size:0.65rem;color:var(--hot);font-weight:900;text-transform:uppercase;margin-bottom:4px}
+    .deal-tooltip .dt-price{font-size:1.2rem;font-weight:900;color:var(--text)}
+    .deal-tooltip .dt-store{font-size:0.8rem;color:var(--muted);margin-top:2px}
+
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:24px;z-index:1000}
     .overlay.show{display:flex}
-    .modal{width:min(560px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:16px}
+    .modal{width:min(600px,100%);background:var(--surface);border:1px solid var(--border2);border-radius:24px;padding:32px;position:relative;box-shadow:0 20px 50px rgba(0,0,0,0.5)}
     .modal h3{font-size:1rem}
     .modal .mrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
     .modal .box{background:var(--surface2);border:1px solid var(--border);padding:10px;border-radius:10px}
@@ -80,12 +104,12 @@
 <body>
 <header>
   <div class="logo">
-    <div class="logo-icon">🧾</div>
+    <div class="logo-icon">✨</div>
     <div class="logo-text">Bon<span>Scout</span></div>
   </div>
   <div class="header-pills">
-    <div class="hpill freq">● Daily</div>
-    <div class="hpill rare">● Long-lasting</div>
+    <div class="hpill freq">Daily</div>
+    <div class="hpill rare">Long-lasting</div>
     <div class="hpill">Profil</div>
   </div>
 </header>
@@ -93,29 +117,26 @@
 <div class="app">
   <section class="left">
     <div class="card">
-      <div class="title">Kassenbons <strong>automatisch</strong> auswerten</div>
-      <div class="sub">BonScout sammelt Kaufdaten aus hochgeladenen Bons und berechnet dein Einkaufsverhalten inkl. Wiederkaufsprognose.</div>
+      <div class="title"><span>Bons</span> scannen,<br>Geld sparen.</div>
+      <div class="sub">BonScout analysiert deine Kassenbons und findet automatisch Deals für deine Lieblingsprodukte.</div>
     </div>
 
     <div class="drop" onclick="document.getElementById('fileInput').click()">
-      <div style="font-weight:800;margin-bottom:6px">Bon hochladen</div>
-      <div class="muted" style="margin-bottom:10px">Bild/PDF auswählen und automatisch zum Profil hinzufügen</div>
-      <button class="btn btn-primary" onclick="event.stopPropagation();document.getElementById('fileInput').click()">Datei auswählen</button>
+      <div style="font-weight:900;margin-bottom:8px;font-size:1.1rem">JETZT SCANNEN</div>
+      <div class="muted" style="margin-bottom:20px">Zieh dein Foto hierher oder klick zum Auswählen</div>
+      <button class="btn btn-primary" onclick="event.stopPropagation();document.getElementById('fileInput').click()">DATEI WÄHLEN</button>
       <input id="fileInput" type="file" accept="image/*,application/pdf" onchange="onUpload(this.files[0])">
     </div>
 
     <div class="preview card">
       <img id="previewImg" alt="Bon Vorschau">
-      <div id="previewPlaceholder" class="placeholder">Noch kein Bon hochgeladen.</div>
+      <div id="previewPlaceholder" class="placeholder">KEIN BON AUSGEWÄHLT</div>
     </div>
 
     <div class="card">
       <div class="row">
-        <button class="btn btn-secondary" onclick="seedDemoHistory()">Demo-Daten hinzufügen</button>
-        <button class="btn btn-secondary" onclick="clearAllData()">Profil zurücksetzen</button>
-      </div>
-      <div class="sub" style="margin-top:8px">Optional Angebote: 
-        <a class="offer-link" target="_blank" rel="noopener noreferrer" href="https://www.marktguru.de/prospekte?utm_source=online&utm_medium=website&utm_campaign=prospekte_generic&gad_source=1&gad_campaignid=18393240946&gclid=Cj0KCQjw4PPNBhD8ARIsAMo-iczO500k6syWsfMWJP73XCob_2x7gzFMNTB6IVW_l6-x8OSCnpyTo0YaAjHnEALw_wcB">Marktguru</a>
+        <button class="btn btn-secondary" onclick="seedDemoHistory()">DEMO DATEN</button>
+        <button class="btn btn-secondary" onclick="clearAllData()">CLEAN PROFIL</button>
       </div>
     </div>
   </section>
@@ -152,20 +173,30 @@
 <script>
 const STORAGE_KEY = 'bonscout.receipts.v1';
 
-const DAILY_KEYWORDS = ['milch','brot','wasser','banane','apfel','obst','gemüse','tomate','gurke','eier','joghurt','käse','fleisch','nudel','reis','butter','saft'];
+const DAILY_KEYWORDS = ['milch','brot','wasser','banane','apfel','obst','gemüse','tomate','gurke','eier','joghurt','käse','fleisch','nudel','reis','butter','saft','riegel','schokolade'];
 const LONG_KEYWORDS  = ['öl','gewürz','salz','reiniger','tabs','essig','zucker','mehl','konserve','backpulver','pfeffer','haushalt','wc','spray'];
 
 const BASE_CATALOG = [
-  {name:'Vollmilch 3,5%', basePrice:1.79},
-  {name:'Brot Vollkorn', basePrice:2.19},
-  {name:'Bananen', basePrice:1.29},
-  {name:'Tomaten', basePrice:1.99},
-  {name:'Eier 10 Stück', basePrice:2.49},
-  {name:'Olivenöl', basePrice:5.49},
-  {name:'Schwarzer Pfeffer', basePrice:1.49},
-  {name:'Spülmaschinentabs', basePrice:5.99},
-  {name:'Essig', basePrice:0.69},
-  {name:'Reiniger', basePrice:1.79}
+  {name:'Vollmilch 3,5%', basePrice:1.79, unit:'1L'},
+  {name:'Brot Vollkorn', basePrice:2.19, unit:'500g'},
+  {name:'Bananen', basePrice:1.29, unit:'1kg'},
+  {name:'Tomaten', basePrice:1.99, unit:'500g'},
+  {name:'Eier 10 Stück', basePrice:2.49, unit:'10 Stk'},
+  {name:'Olivenöl', basePrice:5.49, unit:'750ml'},
+  {name:'Schwarzer Pfeffer', basePrice:1.49, unit:'50g'},
+  {name:'Spülmaschinentabs', basePrice:5.99, unit:'40 Stk'},
+  {name:'Essig', basePrice:0.69, unit:'750ml'},
+  {name:'Reiniger', basePrice:1.79, unit:'1L'},
+  {name:'Kinder Riegel', basePrice:2.89, unit:'210g (10x)'},
+  {name:'Coca-Cola', basePrice:1.29, unit:'1.25L'}
+];
+
+// Simulates data from "official sites"
+const MOCK_DEALS_DATABASE = [
+  {name:'Kinder Riegel', price:'1,99', store:'LIDL', unit:'210g'},
+  {name:'Vollmilch 3,5%', price:'1,11', store:'ALDI SÜD', unit:'1L'},
+  {name:'Coca-Cola', price:'0,88', store:'REWE', unit:'1.25L'},
+  {name:'Bananen', price:'0,99', store:'EDEKA', unit:'1kg'}
 ];
 
 let receipts = loadReceipts();
@@ -216,7 +247,7 @@ function buildSyntheticItems(seed = Date.now()){
     const variance = (rand()*0.3)-0.15;
     const price = (p.basePrice * (1+variance)).toFixed(2).replace('.',',');
     const qty = (1 + Math.floor(rand()*3)) + 'x';
-    return { name:p.name, price, qty };
+    return { name:p.name, price, qty, unit:p.unit };
   });
 }
 function mulberry32(a){ return function(){ let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
@@ -226,17 +257,27 @@ function onUpload(file){
 
   const img = document.getElementById('previewImg');
   const ph = document.getElementById('previewPlaceholder');
+
   if(file.type.startsWith('image/')){
     const r = new FileReader();
-    r.onload = e => { img.src = e.target.result; img.style.display='block'; ph.style.display='none'; };
+    r.onload = e => {
+      img.src = e.target.result;
+      img.style.display='block';
+    };
     r.readAsDataURL(file);
   } else {
     img.style.display='none';
-    ph.style.display='block';
-    ph.textContent = `PDF hochgeladen: ${file.name}`;
   }
 
   const items = buildSyntheticItems(file.name.length + Date.now());
+
+  // Always show recognized items, even with an image
+  ph.style.display = 'block';
+  ph.innerHTML = `<div style="text-align:left;padding:10px">
+    <div style="font-weight:900;margin-bottom:8px;color:var(--accent2)">ERKANNTE ARTIKEL:</div>
+    ${items.map(it => `<div class="meta" style="color:var(--text)">● ${it.name} (${it.unit}) — <span style="color:var(--accent)">${it.price}€</span></div>`).join('')}
+  </div>`;
+
   const receipt = {
     id: cryptoRandomId(),
     uploadedAt: todayISO(),
@@ -259,6 +300,14 @@ function inferStoreFromName(name){
 }
 function cryptoRandomId(){ return Math.random().toString(36).slice(2,11); }
 
+function findDealForItem(itemName){
+  const n = itemName.toLowerCase();
+  // Simple matching: exact or includes
+  return MOCK_DEALS_DATABASE.find(d =>
+    n.includes(d.name.toLowerCase()) || d.name.toLowerCase().includes(n)
+  );
+}
+
 function aggregateProfile(){
   const map = new Map();
 
@@ -272,6 +321,7 @@ function aggregateProfile(){
           purchases: [],
           prices: [],
           qtys: [],
+          unit: it.unit || '',
           categoryHint: classifyName(it.name)
         });
       }
@@ -302,7 +352,10 @@ function aggregateProfile(){
     profileItems.push({
       name: v.itemName,
       count, firstDate, lastDate, avgInterval, nextExpectedDate, daysSinceLast, dueIn, status, cadence, confidence,
-      lastStore: v.purchases[v.purchases.length-1].store
+      lastStore: v.purchases[v.purchases.length-1].store,
+      lastPrice: v.prices[v.prices.length-1],
+      unit: v.unit,
+      deal: findDealForItem(v.itemName)
     });
   }
 
@@ -370,17 +423,26 @@ function renderItemList(items){
   }
   root.innerHTML = items.map(i=>{
     const [cls,label] = cadenceTag(i.cadence);
+    const dealHtml = i.deal ? `
+      <span class="deal-badge">DEAL!</span>
+      <div class="deal-tooltip">
+        <div class="dt-label">BESTER PREIS GEFUNDEN</div>
+        <div class="dt-price">${i.deal.price} €</div>
+        <div class="dt-store">bei ${i.deal.store} (${i.deal.unit})</div>
+      </div>
+    ` : '';
+
     return `
       <div class="item" onclick="openOverlay('${escapeHtml(i.name)}')">
         <div>
-          <div class="name">${escapeHtml(i.name)}</div>
-          <div class="meta">Zuletzt: ${formatDate(i.lastDate)} · Ø Intervall: ${i.avgInterval} Tage · Store: ${escapeHtml(i.lastStore)}</div>
+          <div class="name">${escapeHtml(i.name)} ${dealHtml}</div>
+          <div class="meta">${i.unit ? i.unit + ' · ' : ''}Zuletzt: ${formatDate(i.lastDate)} (${i.lastPrice}€)</div>
           <div class="urgency ${i.status==='due'?'due':'ok'}">
-            ${i.status==='due' ? 'Wiederkauf fällig' : `Voraussichtlich in ${i.dueIn} Tag(en)`}
+            ${i.status==='due' ? 'Wiederkauf fällig' : `Nächster Bedarf in ${i.dueIn} Tagen`}
           </div>
         </div>
         <div style="text-align:right">
-          <div class="meta">${i.count} Kauf/Käufe</div>
+          <div class="meta">${i.count}x gekauft</div>
           <span class="tag ${cls}">${label}</span>
         </div>
       </div>
@@ -397,7 +459,7 @@ function openOverlay(name){
   document.getElementById('ovMetrics').innerHTML = `
     <div class="box"><div class="muted">Käufe gesamt</div><div style="font-weight:900">${item.count}</div></div>
     <div class="box"><div class="muted">Ø Intervall</div><div style="font-weight:900">${item.avgInterval} Tage</div></div>
-    <div class="box"><div class="muted">Erster Kauf</div><div style="font-weight:900">${formatDate(item.firstDate)}</div></div>
+    <div class="box"><div class="muted">Letzter Preis</div><div style="font-weight:900">${item.lastPrice}€</div></div>
     <div class="box"><div class="muted">Letzter Kauf</div><div style="font-weight:900">${formatDate(item.lastDate)}</div></div>
     <div class="box"><div class="muted">Nächster Bedarf</div><div style="font-weight:900">${formatDate(item.nextExpectedDate)}</div></div>
     <div class="box"><div class="muted">Konfidenz</div><div style="font-weight:900">${item.confidence}%</div></div>
