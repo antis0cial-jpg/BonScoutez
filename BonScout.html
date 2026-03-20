@@ -369,24 +369,35 @@ function parseReceiptText(text) {
   const lines = text.split('\n');
   const foundItems = [];
 
-  // Basic Regex for Price (e.g. 1,99 or 0.99)
-  const priceRegex = /(\d+[,.]\d{2})/;
+  // Basic Regex for Price (e.g. 1,99 or 0.99) - but NOT part of a date like 20.03.2024
+  const priceRegex = /(?<!\d\d\.)(\d+[,.]\d{2})(?!\.\d{4})/;
+
+  let started = false;
 
   for (let line of lines) {
     line = line.trim();
     if (line.length < 3) continue;
 
-    // Ignore common receipt noise
-    const noise = ['summe', 'gesamt', 'steuer', 'mwst', 'datum', 'uhrzeit', 'bar', 'karte', 'wechselgeld', 'euro', 'vielen dank', 'auf wiedersehen'];
+    // Start only after EUR, € or Artikel markers
+    if (!started) {
+      if (['EUR', '€', 'ARTIKEL', 'NETTO'].some(m => line.toUpperCase().includes(m))) {
+        started = true;
+      }
+      continue;
+    }
+
+    // Ignore common receipt noise and end markers
+    const noise = ['summe', 'gesamt', 'steuer', 'mwst', 'datum', 'uhrzeit', 'bar', 'karte', 'wechselgeld', 'vielen dank', 'auf wiedersehen', 'bon-nr', 'beleg-nr'];
     if (noise.some(n => line.toLowerCase().includes(n))) continue;
 
     const match = line.match(priceRegex);
     if (match) {
-      const price = match[1].replace('.', ',');
-      let name = line.replace(match[0], '').trim();
+      const priceValue = match[1];
+      const price = priceValue.replace('.', ',');
+      let name = line.replace(priceValue, '').trim();
 
-      // Clean up name from trailing markers like A, B, C (tax categories)
-      name = name.replace(/\s[A-Z]$/, '').trim();
+      // Clean up name from trailing markers like A, B, C (tax categories) and common currency symbols
+      name = name.replace(/\s[A-Z]$/, '').replace(/EUR|€/gi, '').trim();
 
       if (name.length > 2) {
         // Try to find unit in text (e.g. "kg", "g", "ml", "L")
