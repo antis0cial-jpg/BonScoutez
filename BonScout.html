@@ -112,9 +112,11 @@
     <div class="card">
       <div class="row">
         <button class="btn btn-secondary" onclick="seedDemoHistory()">Demo-Daten hinzufügen</button>
+        <button class="btn btn-secondary" onclick="exportData()">Export JSON</button>
+        <button class="btn btn-secondary" onclick="importData()">Import JSON</button>
         <button class="btn btn-secondary" onclick="clearAllData()">Profil zurücksetzen</button>
       </div>
-      <div class="sub" style="margin-top:8px">Optional Angebote: 
+      <div class="sub" style="margin-top:8px">Optional Angebote:
         <a class="offer-link" target="_blank" rel="noopener noreferrer" href="https://www.marktguru.de/prospekte?utm_source=online&utm_medium=website&utm_campaign=prospekte_generic&gad_source=1&gad_campaignid=18393240946&gclid=Cj0KCQjw4PPNBhD8ARIsAMo-iczO500k6syWsfMWJP73XCob_2x7gzFMNTB6IVW_l6-x8OSCnpyTo0YaAjHnEALw_wcB">Marktguru</a>
       </div>
     </div>
@@ -129,6 +131,12 @@
     <div class="card">
       <div class="section-label">Einkaufsverhalten</div>
       <div id="behaviorSummary" class="muted">Noch keine Daten vorhanden.</div>
+      <button class="btn btn-primary" style="margin-top:12px;width:100%" onclick="copyShoppingList()">Einkaufsliste kopieren</button>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Letzte Bons</div>
+      <div id="receiptHistory" class="muted">Keine Bons vorhanden.</div>
     </div>
 
     <div class="card">
@@ -152,8 +160,8 @@
 <script>
 const STORAGE_KEY = 'bonscout.receipts.v1';
 
-const DAILY_KEYWORDS = ['milch','brot','wasser','banane','apfel','obst','gemüse','tomate','gurke','eier','joghurt','käse','fleisch','nudel','reis','butter','saft'];
-const LONG_KEYWORDS  = ['öl','gewürz','salz','reiniger','tabs','essig','zucker','mehl','konserve','backpulver','pfeffer','haushalt','wc','spray'];
+const DAILY_KEYWORDS = ['milch','brot','wasser','banane','apfel','obst','gemüse','tomate','gurke','eier','joghurt','käse','fleisch','nudel','reis','butter','saft','kaffee','tee','windeln','nudeln','reis'];
+const LONG_KEYWORDS  = ['öl','gewürz','salz','reiniger','tabs','essig','zucker','mehl','konserve','backpulver','pfeffer','haushalt','wc','spray','shampoo','seife','zahnpasta','waschmittel','spülmittel'];
 
 const BASE_CATALOG = [
   {name:'Vollmilch 3,5%', basePrice:1.79},
@@ -255,6 +263,13 @@ function inferStoreFromName(name){
   if(n.includes('rewe')) return 'REWE';
   if(n.includes('lidl')) return 'LIDL';
   if(n.includes('edeka')) return 'EDEKA';
+  if(n.includes('aldi')) return 'ALDI';
+  if(n.includes('kaufland')) return 'Kaufland';
+  if(n.includes('netto')) return 'Netto';
+  if(n.includes('penny')) return 'Penny';
+  if(n.includes('norma')) return 'Norma';
+  if(n.includes('globus')) return 'Globus';
+  if(n.includes('dm')) return 'dm';
   return 'Unbekannt';
 }
 function cryptoRandomId(){ return Math.random().toString(36).slice(2,11); }
@@ -320,6 +335,36 @@ function renderAll(){
   renderKpis(items);
   renderBehavior(items);
   renderItemList(items);
+  renderReceiptHistory();
+}
+
+function renderReceiptHistory(){
+  const root = document.getElementById('receiptHistory');
+  if(!receipts.length){
+    root.innerHTML = 'Keine Bons vorhanden.';
+    return;
+  }
+  const sorted = [...receipts].sort((a,b) => b.uploadedAt.localeCompare(a.uploadedAt));
+  root.innerHTML = sorted.map(r => `
+    <div class="item" style="cursor:default">
+      <div>
+        <div class="name">${escapeHtml(r.store)}</div>
+        <div class="meta">${formatDate(r.uploadedAt)} · ${r.items.length} Artikel</div>
+      </div>
+      <button class="btn btn-secondary" style="padding:4px 8px;font-size:0.6rem;color:var(--danger);border-color:var(--danger)" onclick="deleteReceipt('${r.id}')">Löschen</button>
+    </div>
+  `).join('');
+}
+
+function deleteReceipt(id){
+  if(!confirm('Diesen Bon wirklich löschen?')) return;
+  const idx = receipts.findIndex(r => r.id === id);
+  if(idx !== -1){
+    receipts.splice(idx, 1);
+    saveReceipts();
+    renderAll();
+    showToast('Bon gelöscht');
+  }
 }
 
 function renderKpis(items){
@@ -328,13 +373,22 @@ function renderKpis(items){
   const longCount = items.filter(i=>i.cadence==='long').length;
   const stores = new Set(receipts.map(r=>r.store)).size;
 
+  let totalSpent = 0;
+  receipts.forEach(r => {
+    r.items.forEach(it => {
+      const price = parseFloat(it.price.replace(',', '.'));
+      const qty = parseInt(it.qty) || 1;
+      if (!isNaN(price)) totalSpent += price * qty;
+    });
+  });
+
   document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="k">Gesamtausgaben</div><div class="v">${totalSpent.toFixed(2).replace('.', ',')}€</div></div>
     <div class="kpi"><div class="k">Hochgeladene Bons</div><div class="v">${receipts.length}</div></div>
     <div class="kpi"><div class="k">Erkannte Artikel</div><div class="v">${items.length}</div></div>
     <div class="kpi"><div class="k">Bald fällig</div><div class="v">${dueSoon}</div></div>
     <div class="kpi"><div class="k">Genutzte Stores</div><div class="v">${stores}</div></div>
     <div class="kpi"><div class="k">Daily Artikel</div><div class="v">${dailyCount}</div></div>
-    <div class="kpi"><div class="k">Long-lasting</div><div class="v">${longCount}</div></div>
   `;
 }
 
@@ -360,6 +414,20 @@ function cadenceTag(c){
   if(c==='weekly') return ['freq','Weekly'];
   if(c==='monthly') return ['rare','Monthly'];
   return ['rare','Long-lasting'];
+}
+
+function copyShoppingList(){
+  const items = aggregateProfile();
+  const due = items.filter(i => i.status === 'due').map(i => i.name);
+  if(!due.length){
+    showToast('Keine fälligen Artikel gefunden');
+    return;
+  }
+  navigator.clipboard.writeText(due.join('\n')).then(() => {
+    showToast('Einkaufsliste in die Zwischenablage kopiert');
+  }).catch(() => {
+    showToast('Fehler beim Kopieren');
+  });
 }
 
 function renderItemList(items){
@@ -444,6 +512,45 @@ function clearAllData(){
   document.getElementById('previewPlaceholder').textContent='Noch kein Bon hochgeladen.';
   renderAll();
   showToast('Profil zurückgesetzt');
+}
+
+function exportData(){
+  const blob = new Blob([JSON.stringify(receipts, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bonscout_export_${todayISO()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Profil exportiert');
+}
+
+function importData(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if(Array.isArray(data)){
+          receipts = data;
+          saveReceipts();
+          renderAll();
+          showToast('Profil erfolgreich importiert');
+        } else {
+          showToast('Fehler: Ungültiges Format');
+        }
+      } catch(err) {
+        showToast('Fehler beim Lesen der Datei');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 
 renderAll();
