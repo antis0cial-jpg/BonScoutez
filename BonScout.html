@@ -384,22 +384,34 @@ async function onUpload(file){
   const status = document.getElementById('scanStatus');
   const log = document.getElementById('scanLog');
 
-  // 1. Show preview
-  if(file.type.startsWith('image/')){
-    const r = new FileReader();
-    r.onload = e => { img.src = e.target.result; img.style.display='block'; };
-    r.readAsDataURL(file);
-  } else {
-    img.style.display='none';
-  }
-
-  // 2. Start AI Analysis
   overlay.classList.add('show');
   bar.style.width = '0%';
-  status.textContent = "KI wird geladen...";
-  log.textContent = "Bereite Tesseract Engine vor";
+  status.textContent = "Bild wird vorbereitet...";
+  log.textContent = "Erkenne Bon-Bereich...";
+
+  let originalDataUrl = null;
+  let ocrInput = file;
 
   try {
+    if(file.type.startsWith('image/')){
+      originalDataUrl = await fileToDataURL(file);
+      const cropped = await autoCropReceipt(file);
+      if (cropped && cropped.blob && cropped.previewDataUrl) {
+        ocrInput = cropped.blob;
+        img.src = cropped.previewDataUrl;
+      } else {
+        img.src = originalDataUrl;
+      }
+      img.style.display = 'block';
+      ph.style.display = 'none';
+    } else {
+      img.style.display = 'none';
+      ph.style.display = 'block';
+    }
+
+    status.textContent = "KI wird geladen...";
+    log.textContent = "Bereite Tesseract Engine vor";
+
     const worker = await Tesseract.createWorker('deu', 1, {
       logger: m => {
         if(m.status === 'recognizing text') {
@@ -410,7 +422,15 @@ async function onUpload(file){
       }
     });
 
-    const { data: { text } } = await worker.recognize(file);
+    let { data: { text } } = await worker.recognize(ocrInput);
+
+    if (parseReceiptText(text).items.length === 0 && file.type.startsWith('image/')) {
+      status.textContent = "Zweiter OCR-Versuch...";
+      log.textContent = "Kein Ergebnis im Zuschnitt — versuche Originalbild";
+      ({ data: { text } } = await worker.recognize(file));
+      if (originalDataUrl) img.src = originalDataUrl;
+    }
+
     await worker.terminate();
 
     // 3. Parse result
@@ -961,6 +981,79 @@ function clearAllData(){
   document.getElementById('previewPlaceholder').textContent='Noch kein Bon hochgeladen.';
   renderAll();
   showToast('Profil zurückgesetzt');
+}
+
+function fileToDataURL(file){
+  return new Promise((resolve, reject)=>{
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+async function autoCropReceipt(file){
+  try{
+    const bitmap = await createImageBitmap(file);
+    const src = document.createElement('canvas');
+    src.width = bitmap.width;
+    src.height = bitmap.height;
+    const sctx = src.getContext('2d', { willReadFrequently: true });
+    sctx.drawImage(bitmap, 0, 0);
+
+    const bounds = detectReceiptBounds(sctx, src.width, src.height);
+    const dst = document.createElement('canvas');
+    dst.width = bounds.w;
+    dst.height = bounds.h;
+    const dctx = dst.getContext('2d');
+    dctx.drawImage(src, bounds.x, bounds.y, bounds.w, bounds.h, 0, 0, bounds.w, bounds.h);
+
+    const previewDataUrl = dst.toDataURL('image/jpeg', 0.92);
+    const blob = await new Promise(res => dst.toBlob(res, 'image/jpeg', 0.92));
+    if(!blob) return null;
+    return { blob, previewDataUrl };
+  }catch{
+    return null;
+  }
+}
+
+function detectReceiptBounds(ctx, width, height){
+  const imgData = ctx.getImageData(0,0,width,height).data;
+  const lum = new Uint8Array(width*height);
+  for(let i=0,p=0;i<imgData.length;i+=4,p++){
+    lum[p] = Math.round(imgData[i]*0.299 + imgData[i+1]*0.587 + imgData[i+2]*0.114);
+  }
+
+  const step = Math.max(1, Math.floor(Math.min(width, height) / 500));
+  const threshold = 225;
+  let minX = width, minY = height, maxX = 0, maxY = 0, found = false;
+
+  for(let y=0; y<height; y+=step){
+    for(let x=0; x<width; x+=step){
+      const v = lum[y*width + x];
+      if(v < threshold){
+        found = true;
+        if(x < minX) minX = x;
+        if(y < minY) minY = y;
+        if(x > maxX) maxX = x;
+        if(y > maxY) maxY = y;
+      }
+    }
+  }
+
+  if(!found) return { x:0, y:0, w:width, h:height };
+
+  const padX = Math.round((maxX - minX) * 0.08);
+  const padY = Math.round((maxY - minY) * 0.08);
+
+  minX = Math.max(0, minX - padX);
+  minY = Math.max(0, minY - padY);
+  maxX = Math.min(width - 1, maxX + padX);
+  maxY = Math.min(height - 1, maxY + padY);
+
+  const w = Math.max(1, maxX - minX + 1);
+  const h = Math.max(1, maxY - minY + 1);
+  return { x:minX, y:minY, w, h };
 }
 
 initTheme();
