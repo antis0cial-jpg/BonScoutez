@@ -8,22 +8,23 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root{
-      --bg:#050505;--surface:#111;--surface2:#1a1a1a;--border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.2);
-      --text:#ffffff;--muted:#a0a0a0;--freq:#00ffaa;--freq-bg:rgba(0,255,170,.1);--rare:#ffbb00;--rare-bg:rgba(255,187,0,.1);
-      --accent:#ff00ff;--accent2:#00ffff;--accent-bg:rgba(255,0,255,.12);--danger:#ff3333;--hot:#ffff00;
-      --glass:rgba(5,5,5,.95);
+      --bg:#020202;--surface:#0d0d0d;--surface2:#151515;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.15);
+      --text:#ffffff;--muted:#888888;--freq:#00ffa3;--freq-bg:rgba(0,255,163,.1);--rare:#ffcc00;--rare-bg:rgba(255,204,0,.1);
+      --accent:#ff00ff;--accent2:#00f0ff;--accent-bg:rgba(255,0,255,.15);--danger:#ff2a6d;--hot:#d1ff00;
+      --glass:rgba(2,2,2,.85);
     }
     body.light-mode {
-      --bg:#f8f8f8;--surface:#ffffff;--surface2:#f0f0f0;--border:rgba(0,0,0,.08);--border2:rgba(0,0,0,.15);
-      --text:#111111;--muted:#666666;--freq:#00cc88;--freq-bg:rgba(0,204,136,.08);--rare:#e6a800;--rare-bg:rgba(230,168,0,.08);
-      --accent:#d600d6;--accent2:#00aaaa;--accent-bg:rgba(214,0,214,.08);--danger:#cc0000;--hot:#ff8800;
-      --glass:rgba(255,255,255,.9);
+      --bg:#f0f2f5;--surface:#ffffff;--surface2:#f9fafb;--border:rgba(0,0,0,.06);--border2:rgba(0,0,0,.12);
+      --text:#0a0a0a;--muted:#6b7280;--freq:#059669;--freq-bg:rgba(5,150,105,.08);--rare:#d97706;--rare-bg:rgba(217,119,6,.08);
+      --accent:#7c3aed;--accent2:#0891b2;--accent-bg:rgba(124,58,237,.08);--danger:#e11d48;--hot:#84cc16;
+      --glass:rgba(255,255,255,.8);
     }
     *,*:before,*:after{box-sizing:border-box;margin:0;padding:0}
     body{background:var(--bg);color:var(--text);font-family:'Cabinet Grotesk',sans-serif;min-height:100vh;display:flex;flex-direction:column;letter-spacing:-0.01em}
-    header{padding:20px 32px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--glass);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100}
-    .logo{display:flex;align-items:center;gap:12px}
-    .logo-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(45deg,var(--accent),var(--accent2));font-size:1.2rem;box-shadow:0 0 20px rgba(255,0,255,0.3)}
+    header{padding:24px 40px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--glass);backdrop-filter:blur(24px);position:sticky;top:0;z-index:100}
+    .logo{display:flex;align-items:center;gap:14px}
+    .logo-icon{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:1.4rem;box-shadow:0 0 25px rgba(255,0,255,0.4);animation:glow 3s infinite alternate}
+    @keyframes glow { from { box-shadow: 0 0 20px rgba(255,0,255,0.3); } to { box-shadow: 0 0 35px rgba(0,240,255,0.5); } }
     .logo-text{font-size:1.2rem;font-weight:900;text-transform:uppercase;letter-spacing:0.05em}.logo-text span{color:var(--accent2)}
     .header-pills{display:flex;gap:12px}
     .hpill{padding:6px 14px;border-radius:8px;font-size:.75rem;font-weight:800;border:1px solid var(--border);color:var(--muted);transition:0.2s}
@@ -35,19 +36,21 @@
     .left{padding:32px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:24px;min-height:0;overflow-y:auto}
     .right{padding:32px;display:flex;flex-direction:column;gap:24px;overflow:auto;background:linear-gradient(180deg, transparent, rgba(255,0,255,0.02))}
 
-    .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:24px;transition:0.3s border-color}
-    .card:hover{border-color:var(--border2)}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:28px;transition:0.4s cubic-bezier(0.2, 0.8, 0.2, 1)}
+    .card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,0.2)}
     .title{font-size:2rem;font-weight:900;line-height:1.1;margin-bottom:8px}
     .title span{color:var(--accent)}
     .sub{font-size:.9rem;color:var(--muted);line-height:1.6}
 
-    .drop{border:2px dashed var(--border);background:var(--surface2);border-radius:20px;padding:40px;text-align:center;cursor:pointer;transition:0.3s}
-    .drop:hover{border-color:var(--accent2);background:rgba(0,255,255,0.02)}
-    .btn{padding:12px 24px;border-radius:12px;border:none;font-weight:900;cursor:pointer;font-size:.85rem;text-transform:uppercase;letter-spacing:0.05em;transition:0.2s;display:inline-flex;align-items:center;gap:8px}
-    .btn-primary{background:var(--accent);color:#000;box-shadow:0 4px 15px rgba(255,0,255,0.3)}
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,0,255,0.4)}
+    .drop{border:2px dashed var(--border);background:var(--surface2);border-radius:24px;padding:48px;text-align:center;cursor:pointer;transition:0.4s;position:relative;overflow:hidden}
+    .drop:hover{border-color:var(--accent2);background:rgba(0,240,255,0.03)}
+    .drop::before{content:'';position:absolute;inset:0;background:linear-gradient(45deg, transparent, rgba(255,255,255,0.05), transparent);transform:translateX(-100%);transition:0.6s}
+    .drop:hover::before{transform:translateX(100%)}
+    .btn{padding:14px 28px;border-radius:16px;border:none;font-weight:900;cursor:pointer;font-size:.8rem;text-transform:uppercase;letter-spacing:0.08em;transition:0.3s cubic-bezier(0.2, 0.8, 0.2, 1);display:inline-flex;align-items:center;gap:10px}
+    .btn-primary{background:var(--accent);color:#000;box-shadow:0 8px 20px rgba(255,0,255,0.3)}
+    .btn-primary:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 12px 25px rgba(255,0,255,0.5)}
     .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border2)}
-    .btn-secondary:hover{background:var(--border)}
+    .btn-secondary:hover{background:var(--border);transform:translateY(-2px)}
     .row{display:flex;gap:12px;flex-wrap:wrap}
     #fileInput{display:none}
 
@@ -58,8 +61,8 @@
     .section-label{font-size:.75rem;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:var(--accent2);margin-bottom:16px;display:flex;align-items:center;gap:8px}
     .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
 
-    .item{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px;border:1px solid var(--border);border-radius:16px;background:var(--surface2);margin-bottom:12px;cursor:pointer;transition:0.2s;position:relative}
-    .item:hover{border-color:var(--accent2);transform:scale(1.02);z-index:2}
+    .item{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:18px 24px;border:1px solid var(--border);border-radius:20px;background:var(--surface2);margin-bottom:14px;cursor:pointer;transition:0.3s cubic-bezier(0.2, 0.8, 0.2, 1);position:relative}
+    .item:hover{border-color:var(--accent2);transform:translateX(8px);background:var(--surface);box-shadow:0 10px 30px rgba(0,0,0,0.3);z-index:2}
     .name{font-weight:900;font-size:1rem;display:flex;align-items:center;gap:8px}
     .meta{font-size:.8rem;color:var(--muted);margin-top:4px}
     .tag{padding:4px 10px;border-radius:6px;font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:0.05em}
@@ -79,23 +82,25 @@
     .muted{color:var(--muted);font-size:.9rem;line-height:1.6}
 
     /* Hover Deal UI */
-    .deal-badge{background:var(--hot);color:#000;padding:2px 6px;border-radius:4px;font-size:0.65rem;font-weight:900;margin-left:8px;animation:pulse 1.5s infinite;box-shadow:0 0 10px var(--hot)}
-    @keyframes pulse{0%{opacity:1;transform:scale(1)}50%{opacity:0.7;transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+    .deal-badge{background:var(--hot);color:#000;padding:3px 8px;border-radius:6px;font-size:0.65rem;font-weight:900;margin-left:10px;animation:pulse 1.8s infinite;box-shadow:0 0 15px var(--hot);display:inline-flex;align-items:center;gap:4px}
+    .deal-badge::before{content:'⚡'}
+    @keyframes pulse{0%{transform:scale(1);box-shadow:0 0 10px var(--hot)}50%{transform:scale(1.08);box-shadow:0 0 20px var(--hot)}100%{transform:scale(1);box-shadow:0 0 10px var(--hot)}}
 
     .deal-tooltip{
       position:absolute;visibility:hidden;opacity:0;
-      background:var(--surface);border:1px solid var(--accent2);
-      padding:16px;border-radius:20px;z-index:100;width:220px;
-      box-shadow:0 15px 40px rgba(0,0,0,0.4);transition:0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      pointer-events:none;left:50%;bottom:calc(100% + 15px);
-      transform:translateX(-50%) translateY(15px);
-      border-top: 4px solid var(--accent);
+      background:var(--surface);border:1px solid var(--border2);
+      padding:20px;border-radius:24px;z-index:100;width:240px;
+      box-shadow:0 25px 50px rgba(0,0,0,0.6);transition:0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events:none;left:50%;bottom:calc(100% + 20px);
+      transform:translateX(-50%) translateY(20px);
+      border-bottom: 4px solid var(--hot);
     }
     .item:hover .deal-tooltip{visibility:visible;opacity:1;transform:translateX(-50%) translateY(0)}
-    .deal-tooltip .dt-label{font-size:0.65rem;color:var(--accent);font-weight:900;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px}
-    .deal-tooltip .dt-price{font-size:1.8rem;font-weight:900;color:var(--accent2);line-height:1}
-    .deal-tooltip .dt-name{font-size:0.85rem;font-weight:900;color:var(--text);margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
-    .deal-tooltip .dt-store{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;background:var(--surface2);display:inline-block;padding:2px 6px;border-radius:4px}
+    .deal-tooltip .dt-label{font-size:0.7rem;color:var(--hot);font-weight:900;text-transform:uppercase;letter-spacing:0.15em;margin-bottom:8px}
+    .deal-tooltip .dt-price{font-size:2.2rem;font-weight:900;color:var(--text);line-height:1;margin-bottom:12px;background:linear-gradient(90deg, #fff, var(--muted));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .deal-tooltip .dt-name{font-size:0.9rem;font-weight:900;color:var(--text);border-top:1px solid var(--border);padding-top:12px}
+    .deal-tooltip .dt-store{font-size:0.75rem;color:var(--accent2);text-transform:uppercase;font-weight:800;letter-spacing:0.1em;margin-top:6px;display:flex;align-items:center;gap:6px}
+    .deal-tooltip .dt-store::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--accent2)}
 
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:24px;z-index:1000}
     .overlay.show{display:flex}
@@ -116,6 +121,9 @@
     .scan-progress-bar{height:100%;background:linear-gradient(90deg, var(--accent), var(--accent2));width:0%;transition:width 0.3s}
     .scan-status{font-size:0.75rem;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent2)}
     .scan-log{font-size:0.65rem;color:var(--muted);margin-top:8px;height:1.2em}
+
+    /* Settings input improvements */
+    input:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 15px rgba(0,240,255,0.2)}
 
     .history-item {
       display: flex;
@@ -181,9 +189,14 @@
     <div class="logo-icon">✨</div>
     <div class="logo-text">Bon<span>Scout</span></div>
   </div>
-  <button class="btn btn-secondary" onclick="toggleTheme()" style="padding: 8px 16px; border-radius: 99px;">
-    <span id="themeLabel">DARK MODE</span>
-  </button>
+  <div class="row" style="align-items: center;">
+    <button class="btn btn-secondary" onclick="openSettings()" style="padding: 8px 16px; border-radius: 99px; border-color: var(--accent2);">
+      <span>⚙️ SETTINGS</span>
+    </button>
+    <button class="btn btn-secondary" onclick="toggleTheme()" style="padding: 8px 16px; border-radius: 99px;">
+      <span id="themeLabel">DARK MODE</span>
+    </button>
+  </div>
 </header>
 
 <div class="app">
@@ -248,6 +261,19 @@
   </div>
 </div>
 
+<div id="settingsOverlay" class="overlay" onclick="closeSettings(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="close-x" onclick="hideSettings()">✕</button>
+    <h3>BonScout Einstellungen</h3>
+    <div style="margin-top:20px">
+      <div class="section-label">Scraper API Key</div>
+      <div class="sub" style="margin-bottom:12px">Benötigt für Live-Deal-Scouting von Google Shopping.</div>
+      <input type="password" id="apiKeyInput" style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-family:inherit;" placeholder="API Key eingeben...">
+      <button class="btn btn-primary" onclick="saveSettings()" style="margin-top:16px; width:100%;">SPEICHERN</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <div id="scanOverlay" class="scan-overlay">
@@ -263,8 +289,10 @@
 <script>
 const STORAGE_KEY = 'bonscout.receipts.v1';
 const THEME_KEY = 'bonscout.theme.v1';
-const SCRAPER_API_KEY = 'rcqbrPhM6VN1zBEZZNJ5dj4r';
+const API_KEY_STORAGE = 'bonscout.scraper.key.v1';
 const DEALS_CACHE_KEY = 'bonscout.deals.cache.v1';
+
+let SCRAPER_API_KEY = localStorage.getItem(API_KEY_STORAGE) || '';
 
 const DAILY_KEYWORDS = ['milch','brot','wasser','banane','apfel','obst','gemüse','tomate','gurke','eier','joghurt','käse','fleisch','butter','saft','riegel','schokolade'];
 const LONG_KEYWORDS  = ['öl','gewürz','salz','reiniger','tabs','essig','zucker','mehl','konserve','backpulver','pfeffer','haushalt','wc','spray','nudel','reis'];
@@ -476,66 +504,69 @@ async function onUpload(file){
 }
 
 function parseReceiptText(text) {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 1);
   const foundItems = [];
   let total = null;
   let pendingQty = null;
   let pendingUnit = null;
 
   const priceRegex = /(?<!\d\d\.)(?<!\d\d\.\d\d\.)(-?\d+[,.]\d{2})(?!\.\d{2})(?!\.\d{4})/;
-  // Extended qtyRegex to handle weights like "0,312 kg x 1,29"
   const qtyRegex = /(\d+[,.]\d*)\s*(kg|g|ml|l|stk)?\s*[xX*]\s*(\d+[,.]\d{2,})/;
   const dateRegex = /\d{2}\.\d{2}\.\d{2,4}/;
 
   let savingsTotal = 0;
-
   let sumFound = false;
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const upperLine = line.toUpperCase();
 
     // 1. Detect Sum - Stop item collection after sum is found
     if (upperLine.includes('SUMME') || upperLine.includes('GESAMT') || upperLine.includes('TOTAL') || upperLine.includes('ZU ZAHLEN')) {
-       const m = line.match(priceRegex);
-       if (m) total = m[1].replace('.', ',');
+       const prices = line.match(new RegExp(priceRegex.source, 'g'));
+       if (prices) total = prices[prices.length - 1].replace('.', ',');
        sumFound = true;
        continue;
     }
     if (sumFound) continue;
 
-    // 2. Filter Noise (Logos, Addresses, Phone numbers, technical info)
-    const noise = ['STEUER', 'MWST', 'DATUM', 'UHRZEIT', 'BELEG', 'TERMINAL', 'CARD', 'KARTE', 'BAR', 'GEGEBEN', 'RÜCKGELD', 'WECHSELGELD', 'VIELEN DANK', 'AUF WIEDERSEHEN', 'BETRAG', 'NETTO', 'STR.', 'TEL:', 'FAX:', 'WWW.', '@', 'DEUTSCHLAND', 'UNTERNEHMEN', 'HANDELS'];
-    const phoneRegex = /(\+?\d{2,4})[\s/]?(\d{3,10})/;
-    if (noise.some(n => upperLine.includes(n)) || dateRegex.test(line) || phoneRegex.test(line)) {
+    // 2. Filter Noise
+    const noise = ['STEUER', 'MWST', 'DATUM', 'UHRZEIT', 'BELEG', 'TERMINAL', 'CARD', 'KARTE', 'BAR', 'GEGEBEN', 'RÜCKGELD', 'WECHSELGELD', 'VIELEN DANK', 'STR.', 'TEL:', 'WWW.', 'FILIALE', 'KASSE', 'ID:', 'PUNKTE', 'PAYBACK'];
+    if (noise.some(n => upperLine.includes(n)) || dateRegex.test(line)) {
       pendingQty = null; pendingUnit = null;
       continue;
     }
+    if (line.match(/^\|?[\s\d.a-zA-Z-]{10,40}$/) && !line.match(priceRegex)) continue;
 
-    // Special case: ignore standalone "kg" weights (e.g., "0,312 kg") if not part of a qty line
-    if (line.toLowerCase().match(/^\d+[,.]\d+\s*kg$/)) {
-      continue;
-    }
-
-    // 3. Detect Quantity/Weight lines
+    // 3. Detect Quantity/Weight
     const qm = line.match(qtyRegex);
     if (qm) {
       pendingQty = qm[1] + (qm[2] ? qm[2] : 'x');
       pendingUnit = qm[2] || null;
-      continue;
+      if (!line.match(priceRegex) && foundItems.length > 0) {
+        const last = foundItems[foundItems.length - 1];
+        if (last.qty === '1x' && !last.isSpecial) {
+           last.qty = pendingQty;
+           last.unit = pendingUnit || last.unit;
+           pendingQty = null; pendingUnit = null;
+           continue;
+        }
+      }
     }
 
     // 4. Detect Prices and Items
-    const pm = line.match(priceRegex);
+    const pm = line.match(new RegExp(priceRegex.source, 'g'));
     if (pm) {
-      const priceVal = pm[1];
-      const priceStr = priceVal.replace('.', ',');
+      const priceStr = pm[pm.length - 1].replace('.', ',');
       const val = parseFloat(priceStr.replace(',', '.'));
 
-      let name = line.replace(priceVal, '').trim();
-      // Remove trailing tax/category markers (A, B, *, 7, 19 etc)
-      name = name.replace(/\s[A-Z0-9*]+$/, '').replace(/EUR|€/gi, '').trim();
+      let name = line.replace(pm[pm.length - 1], '').trim();
+      const qmInner = name.match(qtyRegex);
+      if (qmInner) name = name.replace(qmInner[0], '').trim();
 
-      // Check if it's a discount or adjustment for the previous item
+      name = name.replace(/\s[A-Z0-9*]{1,2}$/, '').replace(/EUR|€/gi, '').trim();
+      name = name.replace(/^[|\s]+/, '');
+
       const isDiscount = upperLine.includes('RABATT') || upperLine.includes('ÄNDERUNG') || upperLine.includes('DIF') || upperLine.includes('%') || (val < 0 && !upperLine.includes('PFAND') && !upperLine.includes('LEERGUT'));
       const isPriceInfo = upperLine.includes('NEUER PREIS');
 
@@ -557,10 +588,18 @@ function parseReceiptText(text) {
         continue;
       }
 
-      if (name.length > 2) {
-        // Special categorizations
-        const isDeposit = upperLine.includes('PFAND') || upperLine.includes('LEERGUT');
+      // Name retrieval from previous line if current name is empty or technical
+      if (name.length <= 2 && i > 0) {
+         let prevIdx = i - 1;
+         while (prevIdx >= 0 && (lines[prevIdx].length <= 2 || noise.some(n => lines[prevIdx].toUpperCase().includes(n)))) prevIdx--;
+         if (prevIdx >= 0 && !lines[prevIdx].match(priceRegex) && !lines[prevIdx].match(qtyRegex)) {
+            name = lines[prevIdx];
+         }
+      }
 
+      if (name.length > 2) {
+        const isDeposit = upperLine.includes('PFAND') || upperLine.includes('LEERGUT');
+        name = name.replace(/\d+[,.]\d{2}$/, '').trim();
         const unitMatch = name.match(/(\d+\s*(kg|g|ml|l|stk))/i);
         const unit = unitMatch ? unitMatch[1] : (pendingUnit || inferUnitFromName(name));
 
@@ -568,7 +607,7 @@ function parseReceiptText(text) {
           name,
           price: priceStr,
           qty: pendingQty || '1x',
-          unit,
+          unit: unit || '',
           isSpecial: isDeposit
         });
 
@@ -577,7 +616,7 @@ function parseReceiptText(text) {
       }
     }
   }
-  return { items: foundItems.slice(0, 20), total, savings: savingsTotal.toFixed(2).replace('.', ',') };
+  return { items: foundItems.slice(0, 24), total, savings: savingsTotal.toFixed(2).replace('.', ',') };
 }
 
 function inferStoreFromText(text) {
@@ -608,63 +647,53 @@ function inferStoreFromName(name){
 function cryptoRandomId(){ return Math.random().toString(36).slice(2,11); }
 
 async function scoutDeals(itemName) {
+  if (!SCRAPER_API_KEY) return null;
   const key = itemName.toLowerCase().trim();
+  const searchName = key.replace(/\d+\s*(g|kg|ml|l|stk|x)/gi, '').replace(/[^a-z0-9 ]/gi, '').trim();
+  if (searchName.length < 3) return null;
+
   if (dealsCache[key]) {
     const cached = dealsCache[key];
-    // Cache valid for 24 hours
     if (Date.now() - cached.timestamp < 86400000) return cached.deal;
   }
   if (pendingScouts.has(key)) return null;
   pendingScouts.add(key);
 
   try {
-    // We search for the item price in Germany (Google Shopping-like query)
-    const query = encodeURIComponent(`${itemName} preis supermarkt deutschland`);
+    const query = encodeURIComponent(`${searchName} preis supermarkt deutschland`);
     const url = `https://api.scraperapi.com/?api_key=${SCRAPER_API_KEY}&url=https://www.google.com/search?q=${query}&tbm=shop`;
 
-    const res = await fetch(url);
+    const res = await fetch(url).catch(() => ({ ok: false }));
+    if (!res || !res.ok) {
+       dealsCache[key] = { deal: null, timestamp: Date.now() - 82800000 };
+       return null;
+    }
     const html = await res.text();
-
-    // Simple extraction logic from search results (this is a heuristic)
-    // Looking for price patterns like "1,99 €" or "€ 1.99" and store names
-    const priceRegex = /(\d+[,.]\d{2})\s*€/g;
     const storeKeywords = ['REWE', 'Lidl', 'EDEKA', 'Aldi', 'Kaufland', 'Netto', 'Penny', 'Rossmann', 'dm'];
-
     let bestDeal = null;
     let minPrice = Infinity;
 
-    // We'll use a DOM parser to extract more reliably if possible
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
-
-    // Look for common Google Shopping result containers and fallback to general search results
     const results = doc.querySelectorAll('.sh-dgr__content, .sh-np__click-target, .vP79B, .i0X6df, .g');
 
-    if (results.length > 0) {
-      results.forEach(el => {
-        const text = (el.innerText || el.textContent).replace(/\s+/g, ' ');
-        // Price regex to find values like "1,99 €" or "€1.99"
-        const pMatch = text.match(/(\d+[,.]\d{2})\s*€|€\s*(\d+[,.]\d{2})/);
-        if (pMatch) {
-          const priceStr = pMatch[1] || pMatch[2];
-          const p = parseFloat(priceStr.replace(',', '.'));
-
-          // Heuristic: Ignore prices that are likely too high (e.g. bulk orders) or too low (e.g. shipping fees)
-          // compared to typical single-item prices in the catalog.
-          const store = storeKeywords.find(s => text.toUpperCase().includes(s.toUpperCase())) || 'Onlineshop';
-          if (p < minPrice && p > 0.1) {
-            minPrice = p;
-            bestDeal = { name: itemName, price: priceStr, store: store };
-          }
+    results.forEach(el => {
+      const text = (el.innerText || el.textContent).replace(/\s+/g, ' ');
+      const pMatch = text.match(/(\d+[,.]\d{2})\s*€|€\s*(\d+[,.]\d{2})/);
+      if (pMatch) {
+        const priceStr = pMatch[1] || pMatch[2];
+        const p = parseFloat(priceStr.replace(',', '.'));
+        const store = storeKeywords.find(s => text.toUpperCase().includes(s.toUpperCase())) || 'Onlineshop';
+        if (p < minPrice && p > 0.3) {
+          minPrice = p;
+          bestDeal = { name: itemName, price: priceStr, store: store };
         }
-      });
-    }
+      }
+    });
 
-    if (bestDeal) {
-      dealsCache[key] = { deal: bestDeal, timestamp: Date.now() };
-      saveDealsCache();
-      return bestDeal;
-    }
+    dealsCache[key] = { deal: bestDeal, timestamp: Date.now() };
+    saveDealsCache();
+    return bestDeal;
   } catch (e) {
     console.error('Scouting failed:', e);
   } finally {
@@ -681,12 +710,14 @@ function debouncedRender() {
 
 function findDealForItem(itemName){
   const key = itemName.toLowerCase().trim();
-  if (dealsCache[key] && dealsCache[key].deal) return dealsCache[key].deal;
+  if (dealsCache[key]) return dealsCache[key].deal;
 
-  // Non-blocking trigger for next time
-  scoutDeals(itemName).then(deal => {
-    if (deal) debouncedRender();
-  });
+  // Non-blocking trigger in background
+  if (!pendingScouts.has(key)) {
+    scoutDeals(itemName).then(deal => {
+      if (deal) debouncedRender();
+    });
+  }
   return null;
 }
 
@@ -886,6 +917,8 @@ function renderItemList(items){
   root.innerHTML = items.map(i=>{
     const [cls,label] = cadenceTag(i.cadence);
     let dealHtml = '';
+    const key = i.name.toLowerCase().trim();
+
     if (i.deal) {
       dealHtml = `
         <span class="deal-badge">DEAL!</span>
@@ -896,6 +929,11 @@ function renderItemList(items){
           <div class="dt-store">${i.deal.store}</div>
         </div>
       `;
+    } else if (pendingScouts.has(key)) {
+      dealHtml = `<span class="deal-badge" style="background:var(--border); color:var(--muted); box-shadow:none; animation:none; opacity:0.6;">Suche...</span>`;
+    } else if (SCRAPER_API_KEY && !dealsCache[key]) {
+      // Trigger search if not in cache and not pending
+      findDealForItem(i.name);
     }
 
     return `
@@ -939,8 +977,39 @@ function openOverlay(name){
 function hideOverlay(){ document.getElementById('overlay').classList.remove('show'); }
 function closeOverlay(e){ if(e.target.id==='overlay') hideOverlay(); }
 
-function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"').replace(/'/g,'&#039;'); }
-function unescapeHtml(s){ return s.replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"').replace(/&#039;/g,"'").replace(/&amp;/g,'&'); }
+function openSettings(){
+  document.getElementById('apiKeyInput').value = SCRAPER_API_KEY;
+  document.getElementById('settingsOverlay').classList.add('show');
+}
+function hideSettings(){ document.getElementById('settingsOverlay').classList.remove('show'); }
+function closeSettings(e){ if(e.target.id==='settingsOverlay') hideSettings(); }
+function saveSettings(){
+  const val = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem(API_KEY_STORAGE, val);
+  SCRAPER_API_KEY = val;
+  hideSettings();
+  showToast('Einstellungen gespeichert');
+  debouncedRender();
+}
+
+function escapeHtml(s){
+  if(!s) return '';
+  return s.toString()
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+function unescapeHtml(s){
+  if(!s) return '';
+  return s.toString()
+    .replace(/&lt;/g,'<')
+    .replace(/&gt;/g,'>')
+    .replace(/&quot;/g,'"')
+    .replace(/&#039;/g,"'")
+    .replace(/&amp;/g,'&');
+}
 
 function seedDemoHistory(){
   const start = new Date();
@@ -967,6 +1036,17 @@ function seedDemoHistory(){
     });
   }
   receipts = [...receipts, ...demo];
+
+  // Seed a mock deal for demonstration
+  const krKey = 'kinder riegel';
+  if (!dealsCache[krKey]) {
+    dealsCache[krKey] = {
+      deal: { name: 'Kinder Riegel', price: '2,49', store: 'Lidl' },
+      timestamp: Date.now()
+    };
+    saveDealsCache();
+  }
+
   saveReceipts();
   renderAll();
   showToast('Demo-Historie hinzugefügt');
