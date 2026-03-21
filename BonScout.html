@@ -351,14 +351,16 @@ function buildSyntheticItems(seed = Date.now()){
     const variance = (rand()*0.3)-0.15;
     const price = (p.basePrice * (1+variance)).toFixed(2).replace('.',',');
     const qty = (1 + Math.floor(rand()*3)) + 'x';
-    return { name:p.name, price, qty, unit:p.unit };
+    const it = { name:p.name, price, qty, unit:p.unit };
+    if (rand() > 0.7) {
+      it.isOffer = true;
+      it.originalPrice = (parseFloat(price.replace(',', '.')) + 0.50).toFixed(2).replace('.', ',');
+    }
+    return it;
   });
-
-  // Add a random discount/deposit for demo variety
   if (rand() > 0.5) {
-    items.push({ name: 'PFAND-RÜCKGABE', price: '-0,25', qty: '1x', unit: '' });
+    items.push({ name: 'PFAND-RÜCKGABE', price: '-0,25', qty: '1x', unit: '', isSpecial: true });
   }
-
   return items;
 }
 function mulberry32(a){ return function(){ let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
@@ -449,9 +451,11 @@ function parseReceiptText(text) {
   const foundItems = [];
   let total = null;
   let pendingQty = null;
+  let pendingUnit = null;
 
   const priceRegex = /(?<!\d\d\.)(?<!\d\d\.\d\d\.)(-?\d+[,.]\d{2})(?!\.\d{2})(?!\.\d{4})/;
-  const qtyRegex = /(\d+)\s*[xX*]\s*(\d+[,.]\d{2,})/;
+  // Extended qtyRegex to handle weights like "0,312 kg x 1,29"
+  const qtyRegex = /(\d+[,.]\d*)\s*(kg|g|ml|l|stk)?\s*[xX*]\s*(\d+[,.]\d{2,})/;
   const dateRegex = /\d{2}\.\d{2}\.\d{2,4}/;
 
   let savingsTotal = 0;
@@ -460,46 +464,76 @@ function parseReceiptText(text) {
     const line = lines[i];
     const upperLine = line.toUpperCase();
 
+    // 1. Detect Sum
     if (upperLine.includes('SUMME') || upperLine.includes('GESAMT') || upperLine.includes('TOTAL') || upperLine.includes('ZU ZAHLEN')) {
        const m = line.match(priceRegex);
        if (m) total = m[1].replace('.', ',');
-       if (foundItems.length > 0) break;
        continue;
     }
 
+    // 2. Filter Noise
     const noise = ['STEUER', 'MWST', 'DATUM', 'UHRZEIT', 'BELEG', 'TERMINAL', 'CARD', 'KARTE', 'BAR', 'GEGEBEN', 'RÜCKGELD', 'WECHSELGELD', 'VIELEN DANK', 'AUF WIEDERSEHEN', 'BETRAG', 'NETTO'];
     if (noise.some(n => upperLine.includes(n)) || dateRegex.test(line)) {
-      pendingQty = null;
+      pendingQty = null; pendingUnit = null;
       continue;
     }
 
+    // 3. Detect Quantity/Weight lines
     const qm = line.match(qtyRegex);
     if (qm) {
-      pendingQty = qm[1] + 'x';
+      pendingQty = qm[1] + (qm[2] ? qm[2] : 'x');
+      pendingUnit = qm[2] || null;
       continue;
     }
 
+    // 4. Detect Prices and Items
     const pm = line.match(priceRegex);
     if (pm) {
       const priceVal = pm[1];
-      const price = priceVal.replace('.', ',');
+      const priceStr = priceVal.replace('.', ',');
+      const val = parseFloat(priceStr.replace(',', '.'));
+
       let name = line.replace(priceVal, '').trim();
-      // Remove trailing tax markers like '19', '7' or 'A', 'B'
-      name = name.replace(/\s[A-Z0-9]+$/, '').replace(/EUR|€/gi, '').trim();
+      // Remove trailing tax/category markers (A, B, *, 7, 19 etc)
+      name = name.replace(/\s[A-Z0-9*]+$/, '').replace(/EUR|€/gi, '').trim();
+
+      // Check if it's a discount or adjustment for the previous item
+      const isDiscount = upperLine.includes('RABATT') || upperLine.includes('ÄNDERUNG') || upperLine.includes('DIF');
+      const isPriceInfo = upperLine.includes('NEUER PREIS');
+
+      if (isDiscount && val <= 0 && foundItems.length > 0) {
+        const last = foundItems[foundItems.length - 1];
+        const oldPrice = parseFloat(last.price.replace(',', '.'));
+        last.price = (oldPrice + val).toFixed(2).replace('.', ',');
+        last.isOffer = true;
+        last.originalPrice = oldPrice.toFixed(2).replace('.', ',');
+        savingsTotal += Math.abs(val);
+        continue;
+      }
+
+      if (isPriceInfo) continue;
 
       if (name.length > 2) {
-        const unitMatch = line.match(/(\d+\s*(kg|g|ml|l|stk))/i);
-        const unit = unitMatch ? unitMatch[1] : inferUnitFromName(name);
-        foundItems.push({ name, price, qty: pendingQty || '1x', unit });
+        // Special categorizations
+        const isDeposit = upperLine.includes('PFAND') || upperLine.includes('LEERGUT');
 
-        const val = parseFloat(price.replace(',', '.'));
+        const unitMatch = name.match(/(\d+\s*(kg|g|ml|l|stk))/i);
+        const unit = unitMatch ? unitMatch[1] : (pendingUnit || inferUnitFromName(name));
+
+        foundItems.push({
+          name,
+          price: priceStr,
+          qty: pendingQty || '1x',
+          unit,
+          isSpecial: isDeposit
+        });
+
         if (val < 0) savingsTotal += Math.abs(val);
-
-        pendingQty = null;
+        pendingQty = null; pendingUnit = null;
       }
     }
   }
-  return { items: foundItems.slice(0, 15), total, savings: savingsTotal.toFixed(2).replace('.', ',') };
+  return { items: foundItems.slice(0, 20), total, savings: savingsTotal.toFixed(2).replace('.', ',') };
 }
 
 function inferStoreFromText(text) {
@@ -565,6 +599,15 @@ function aggregateProfile(){
   const sortedReceipts = [...receipts].sort((a,b)=>a.uploadedAt.localeCompare(b.uploadedAt));
   for(const r of sortedReceipts){
     for(const it of r.items){
+      // Exclude deposits, negative items, and technical keywords from the prognosis profile
+      if (it.isSpecial) continue;
+      const val = parseFloat(it.price.replace(',', '.'));
+      if (val <= 0) continue;
+
+      const n = it.name.toLowerCase();
+      const skip = ['pfand', 'leergut', 'rabatt', 'summe', 'gesamt', 'beleg', 'kasse', 'terminal', 'rückgeld', 'gehaltsabrechnung', 'vielen dank'];
+      if (skip.some(s => n.includes(s))) continue;
+
       const key = it.name.toLowerCase();
       if(!map.has(key)){
         map.set(key,{
@@ -653,10 +696,11 @@ function renderHistory() {
     const itemsHtml = r.items.map(it => {
       const pVal = parseFloat(it.price.replace(',', '.'));
       const pColor = pVal < 0 ? 'var(--freq)' : 'var(--muted)';
+      const offerBadge = it.isOffer ? `<span style="font-size:0.6rem; color:var(--hot); margin-left:4px">[AKTION]</span>` : '';
       return `
         <div class="ht-line">
-          <span>${escapeHtml(it.name)}</span>
-          <span style="color:${pColor}">${escapeHtml(it.price)}€</span>
+          <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${escapeHtml(it.name)}${offerBadge}</span>
+          <span style="color:${pColor}; margin-left:8px; flex-shrink:0">${escapeHtml(it.price)}€</span>
         </div>
       `;
     }).join('');
